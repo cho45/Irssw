@@ -69,6 +69,9 @@ route '/api/channels', method => GET, action => sub {
 			$t->{name} =  decode_utf8 $_;
 			$t;
 		}
+		grep {
+			!/\@twitter/
+		}
 		keys %$targets
 	];
 	$r->json({
@@ -91,9 +94,9 @@ route '/api/channel', method => GET, action => sub {
 			reverse
 			map {
 				my $text = decode_utf8 $_->{text};
-				$text =~ s{\x04([8/eg]+)}{}g;
-				$text =~ s{\x03(\d+)}{}g;
-				$text =~ s{\x0f}{}g;
+#				$text =~ s{\x04([/eg0-9?>]+)}{}g;
+#				$text =~ s{\x03(\d+)}{}g;
+#				$text =~ s{\x0f}{}g;
 				$_->{text} = $text;
 				$_;
 			}

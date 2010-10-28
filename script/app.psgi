@@ -16,7 +16,7 @@ my $handler = \&Irssw::run;
 
 builder {
 	enable "Plack::Middleware::Static",
-		path => qr{^//?static/}, root => dirname(__FILE__) . '/../';
+		path => qr{^//?(?:js|css|image)/}, root => dirname(__FILE__) . '/../static/';
 
 	enable "Plack::Middleware::ReverseProxy";
 	enable "Session", store => 'File';
