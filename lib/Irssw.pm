@@ -23,6 +23,16 @@ my $client = mprpc_client '127.0.0.1', '4423';
 route '/', action => sub {
 	my ($r) = @_;
 	$r->require_user or return;
+	if ($r->device) {
+		return $r->res->redirect('/' . $r->device . $r->req->path_info);
+	}
+
+	$r->html('index.html');
+};
+
+route '/touch/', action => sub {
+	my ($r) = @_;
+	$r->require_user or return;
 	$r->html('index.html');
 };
 
@@ -174,7 +184,7 @@ sub error {
 
 sub session {
 	my ($self) = @_;
-	$self->req->{env}->{'psgix.session'}
+	$self->req->session;
 }
 
 sub user {
@@ -190,6 +200,16 @@ sub require_user {
 		$self->res->redirect('/login');
 		0;
 	}
+}
+
+sub device {
+	my ($self) = @_;
+	my $b = $self->req->browser;
+	$b->is_android and return 'touch';
+	$b->is_iphone  and return 'touch';
+	$b->is_dsi     and return 'touch';
+	$b->is_mobile  and return 'mobile';
+	return '';
 }
 
 1;
