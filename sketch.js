@@ -1,0 +1,80 @@
+#!node
+
+util = require('util');
+
+function parseText (text) {
+	var fg = 0;
+	var bg = 0;
+	var fl = 0;
+	var ss = text.split(parseText.re);
+	var ret = [];
+	var state = {};
+	for (var i = 0, len = ss.length; i < len; i++) {
+		var text = ss[i];
+		if (!text) continue;
+		var type = text.charCodeAt(0);
+		switch (type) {
+			case 0x02:
+				state.bold = !state.bold; break;
+			case 0x03:
+				if (text.charCodeAt(1)) state.fg = text.charCodeAt(1);
+				if (text.charCodeAt(2)) state.bg = text.charCodeAt(2);
+				break;
+			case 0x04:
+				switch (text.charCodeAt(1)) {
+					case 0x61: state.blink = !state.blink; break;
+					case 0x62: state.underline = !state.underline; break;
+					case 0x63: state.bold = !state.bold; break;
+					case 0x64: state.reverse = !state.reverse; break;
+					case 0x65: state.indent = !state.indent; break;
+					case 0x67: state = {}; break;
+					case 0x68: state.clrtoeol = !state.clrtoeol; break;
+					case 0x69: state.monospace = !state.monospace; break;
+					case 0x29: break;
+					default:
+						if (text.charCodeAt(2)) state.fg = text.charCodeAt(2);
+						if (text.charCodeAt(3)) state.bg = text.charCodeAt(3);
+				}
+				break;
+			case 0x06:
+				state.blink = !state.blink; break;
+			case 0x0f:
+				state = {}; break
+			case 0x16:
+				state.reverse = !state.reverse; break;
+			case 0x1b:
+				// TODO ansi
+				break;
+			case 0x1f:
+				state.underline = !state.underline; break;
+			default:
+				var attr = {};
+				for (var key in state) if (state.hasOwnProperty(key)) {
+					attr[key] = state[key];
+				}
+				ret.push({ attr : attr, text : text });
+		}
+	}
+
+	return ret;
+}
+parseText.types = [
+	'\u0002',
+	'\u0003[0-9][0-9]?',
+	'\u0004(?:[\u0060-\u0069\u0029]|..)',
+	'\u0006',
+	'\u000f', // remove all
+	'\u0016', // reverse
+	'\u001b', // ansi
+	'\u001f'  // underline
+];
+parseText.re = new RegExp('(' + parseText.types.join('|') + ')', 'g');
+
+
+// var text = "\u00049/-\u0004?/!\u00049/-\u0004g \u0004;/conee\u0004g \u00048/[\u0004g\u00043/~shigi@pool-98-118-120-51.bstnma.fios.verizon.net\u0004g\u00048/]\u0004g has joined \u0004c#jquery@fn\u0004c"
+// var text = "\u00048/<\u0004g \u0004gberttrand\u0004g\u00048/>\u0004g \u0004ehow do I use the attribute selector to have the criteria \u0002*between*\u0002 two values... e.g. select all inputs where the value is greater than 2 but less than 5";
+var text = "\u00048/<\u0004g \u0004gnekokak\u0004g\u00048/>\u0004g \u0004e@likk 午前半休なんてただの飾りです。気分は全休ですという現れですね \u000310 [kyu]";
+
+var ret = parseText(text);
+console.log(util.inspect(ret));
+

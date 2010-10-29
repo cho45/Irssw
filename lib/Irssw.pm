@@ -18,7 +18,9 @@ use AnyEvent::MPRPC;
 use Data::Dumper;
 $Data::Dumper::Useqq = 1;
 
-my $client = mprpc_client '127.0.0.1', '4423';
+sub irssi () {
+	my $client = mprpc_client '127.0.0.1', '4423';
+}
 
 route '/', action => sub {
 	my ($r) = @_;
@@ -59,7 +61,7 @@ route '/login', method => POST, action => sub {
 route '/api/channels', method => GET, action => sub {
 	my ($r) = @_;
 	$r->require_user or return;
-	my $targets  = $client->call('targets')->recv;
+	my $targets  = irssi->call('targets')->recv;
 	my $channels = [
 		sort {
 			$b->{last_acted} <=> $a->{last_acted};
@@ -86,8 +88,8 @@ route '/api/channel', method => GET, action => sub {
 	my $limit    = 50;
 
 	my $target  = decode_utf8 $r->req->param('c');
-	my $channel = $client->call('target' => $target)->recv;
-	$before ||= $channel->{messages}->[-1]->{time};
+	my $channel = irssi->call('target' => $target)->recv;
+	$before ||= $channel->{messages}->[-1]->{time} + 1;
 
 	my $messages = [
 		splice @{[

@@ -43,24 +43,34 @@ $server->reg_cb(
 
 sub print_text {
 	my ($dest, $text, $stripped) = @_;
-	if ($dest->{level} & (
-		MSGLEVEL_PUBLIC  |
-		MSGLEVEL_NOTICES |
-		MSGLEVEL_SNOTES  |
-		MSGLEVEL_ACTIONS |
-		MSGLEVEL_INVITES
-	)) {
-		my $target =  $targets->{$dest->{target}} ||= {};
-		$target->{refnum} = $dest->{window}->{refnum};
-		my $messages = $target->{messages} ||= [];
-		push @$messages, +{
-			text => $text,
-			time => scalar time(),
-		};
-		$target->{last_acted} = time();
-		shift @$messages while @$messages > 500;
+	my $name   = $dest->{window}->{name} || $dest->{target};
+	my $target =  $targets->{$name} ||= {};
+	$target->{target} = $dest->{target};
+	$target->{refnum} = $dest->{window}->{refnum};
+	$target->{name}   = $dest->{window}->{name};
+	my $messages = $target->{messages} ||= [];
+	push @$messages, +{
+		level => $dest->{level},
+		text  => $text,
+		time  => scalar time(),
+	};
+	$target->{last_acted} = $dest->{window}->{last_line};
+	shift @$messages while @$messages > 500;
+}
+
+sub update_channels {
+	# TODO remove channels
+	no warnings;
+	for my $win (Irssi::windows()) {
+		my $name = $win->{name} || ($win->{active} && $win->{active}->{name}) || '';
+		my $target = $targets->{$name} ||= {};
+		$target->{refnum} = $win->{refnum};
+		$target->{name}   = $win->{name};
+		$target->{last_acted} = $win->{last_line};
 	}
 }
 
-Irssi::signal_add('print text', 'print_text');
+update_channels();
+Irssi::timeout_add(5000, \&update_channels, undef);
+Irssi::signal_add_last('print text', 'print_text');
 

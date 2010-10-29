@@ -1,3 +1,8 @@
+::-webkit-scrollbar {
+	width: 0px;
+	height: 0px;
+}
+
 
 html,
 body {
@@ -10,6 +15,7 @@ body {
 	margin: 0;
 	overflow: hidden;
 	line-height: 1.66;
+	-webkit-user-select: none;
 }
 
 #whole {
@@ -36,6 +42,7 @@ body {
 }
 
 #log {
+	/* font-family: "Osaka-Mono", monospace */;
 	position: absolute;
 	overflow: auto;
 	top: 0;
@@ -53,10 +60,22 @@ body {
 		color-stop(0.7, #f6f6f6),  
 		to(#ccc)
 	);
+	-webkit-user-select: text;
 }
 
-#log span.es {
+#log span.fg47 {
 	color: #666;
+}
+
+#log span.fg49 {
+	color: #393;
+}
+
+#log span.bg48 {
+}
+
+#log span.bold {
+	font-weight: bold;
 }
 
 #channels {
@@ -64,6 +83,7 @@ body {
 	padding: 0;
 	width: 17em;
 	position: absolute;
+	overflow: auto;
 	top: 0;
 	left: 0;
 	height: 100%;
