@@ -14,6 +14,7 @@ use Irssw::View;
 
 use Irssw::Config;
 
+use AnyEvent::Impl::Perl;
 use AnyEvent::MPRPC;
 use Data::Dumper;
 $Data::Dumper::Useqq = 1;
@@ -71,9 +72,9 @@ route '/api/channels', method => GET, action => sub {
 			$t->{name} =  decode_utf8 $_;
 			$t;
 		}
-		grep {
-			!/\@twitter/
-		}
+#		grep {
+#			!/\@twitter/
+#		}
 		keys %$targets
 	];
 	$r->json({

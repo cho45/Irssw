@@ -1,3 +1,4 @@
+document.createElement('time');
 /* constant */
 MSGLEVEL_CRAP         = 0x0000001;
 MSGLEVEL_MSGS         = 0x0000002;
@@ -123,7 +124,7 @@ function link (text) {
 
 function format (text) {
 	var parsed = parseText(text);
-	var ret    = document.createElement('div');
+	var ret    = document.createDocumentFragment();
 	for (var i = 0, len = parsed.length; i < len; i++) {
 		var t = parsed[i];
 		var s = document.createElement('span');
@@ -164,17 +165,115 @@ function updateChannelLog (channel) {
 		var messages = data.messages;
 		streamBody.empty();
 		for (var i = 0, len = messages.length; i < len; i++) {
-			streamBody.append(format(messages[i].text));
+			var message = messages[i];
+			var date    = new Date(+message.time * 1000);
+			var line = $("<div class='message'></div>");
+			var meta = $('<span class="meta"></span>').appendTo(line);
+			var time = $('<time></time>').attr('datetime', 
+				String(10000 + date.getUTCFullYear()).substring(1) + "-" +
+				String(101 + date.getUTCMonth()).substring(1) + "-" +
+				String(100 + date.getUTCDate()).substring(1) + "T" +
+				String(100 + date.getUTCHours()).substring(1) + ":" +
+				String(100 + date.getUTCMinutes()).substring(1) + ":" +
+				String(100 + date.getUTCSeconds()).substring(1) + "." +
+				String(1000 + date.getUTCMilliseconds()).substring(1) + 'Z'
+			).text(date.toLocaleString()).appendTo(meta);
+			$('<span class="nick"></span>').text(message.nick).appendTo(line);
+			$('<div class="body"></div>').append(format(message.text)).appendTo(line);
+			DateRelative.update(time[0]);
+			streamBody.append(line);
 		}
 	});
 }
+
+function DateRelative () { this.init.apply(this, arguments) };
+DateRelative.prototype = {
+	init : function (value) {
+		this.value = value + 0;
+	},
+	update : function () {
+		var diff   = Math.floor((new Date().getTime() - this.value) / 1000);
+		var future = diff < 0;
+		if (future) diff = -diff;
+		if (diff < 60) {
+			this.number   = diff;
+			this.unit     = 'seconds';
+			this.isFuture = future;
+			return this;
+		}
+		diff = Math.floor(diff / 60);
+		if (diff < 60) {
+			this.number   = diff;
+			this.unit     = 'minutes';
+			this.isFuture = future;
+			return this;
+		}
+		diff = Math.floor(diff / 60);
+		if (diff < 24) {
+			this.number   = diff;
+			this.unit     = 'hours';
+			this.isFuture = future;
+			return this;
+		}
+		diff = Math.floor(diff / 24);
+		if (diff < 365) {
+			this.number   = diff;
+			this.unit     = 'dates';
+			this.isFuture = future;
+			return this;
+		}
+		diff = Math.floor(diff / 365);
+		this.number   = diff;
+		this.unit     = 'years';
+		this.isFuture = future;
+		return this;
+	},
+	valueOf : function () { return this.value }
+};
+DateRelative.update = function (target) {
+	var dtrl = target._dtrl;
+	if (!dtrl) {
+		var dtf = target.getAttribute('datetime').match(/(\d+)-(\d+)-(\d+)T(\d+):(\d+):(\d+)(?:\.(\d+))?Z/);
+		target._dtrl = dtrl = new DateRelative(Date.UTC(+dtf[1], +dtf[2] - 1, +dtf[3], +dtf[4], +dtf[5], +dtf[6]));
+	}
+	dtrl.update();
+
+	var lang = /JST/.test(new Date().toString()) ? 'ja' : 'en'; // super bad hack
+	var format;
+	if (lang == 'ja') {
+		format = dtrl.number + {
+			'seconds' : '秒',
+			'minutes' : '分',
+			'hours' : '時',
+			'dates' : '日',
+			'years' : '年'
+		}[dtrl.unit] + (dtrl.isFuture ? '後' : '前')
+	} else {
+		format = dtrl.number + ' ' +
+				 dtrl.unit + (dtrl.number == 0 || dtrl.number > 1 ? 's ' : ' ') +
+				 (dtrl.isFuture ? 'after' : 'ago');
+	}
+	target.innerHTML = format;
+};
+DateRelative.setupAutoUpdate = function (parent) {
+	return setInterval(function () {
+		parent = parent || document;
+		var targets = parent.getElementsByTagName('time');
+		for (var i = 0, len = targets.length; i < len; i++) {
+			DateRelative.update(targets[i]);
+		}
+	}, 60 * 1000);
+};
 
 function selectChannel (channel) {
 	updateChannelLog(channel);
 }
 
 $(function () {
+	DateRelative.setupAutoUpdate();
+
 	updateChannelList();
+	selectChannel({ name : '#twitter@twitter' });
 	setInterval(function () {
 		updateChannelList();
 	}, 30 * 1000);
