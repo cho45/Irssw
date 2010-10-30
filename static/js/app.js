@@ -214,13 +214,16 @@ DateRelative.update = function (target) {
 	}
 	target.innerHTML = format;
 };
+DateRelative.updateAll = function (parent) {
+	parent = parent || document;
+	var targets = parent.getElementsByTagName('time');
+	for (var i = 0, len = targets.length; i < len; i++) {
+		DateRelative.update(targets[i]);
+	}
+};
 DateRelative.setupAutoUpdate = function (parent) {
 	return setInterval(function () {
-		parent = parent || document;
-		var targets = parent.getElementsByTagName('time');
-		for (var i = 0, len = targets.length; i < len; i++) {
-			DateRelative.update(targets[i]);
-		}
+		DateRelative.updateAll(parent);
 	}, 60 * 1000);
 };
 
@@ -285,7 +288,7 @@ Irssw.updateChannelLog = function (name) {
 			messages = data.messages.reverse();
 		} else {
 			streamBody.empty();
-			messages = messages.concat(channel.messages.concat().reverse());
+			messages = channel.messages.concat(messages).reverse();
 		}
 		for (var i = 0, len = messages.length; i < len; i++) {
 			var message = messages[i];
@@ -295,6 +298,7 @@ Irssw.updateChannelLog = function (name) {
 			Irssw.currentChannel = name;
 		}
 		if (channel.messages.length > 50) channel.messages.length = 50;
+		DateRelative.updateAll();
 	});
 };
 Irssw.selectChannel = function (name) {
