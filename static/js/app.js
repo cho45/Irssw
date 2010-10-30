@@ -233,39 +233,68 @@ Irssw.updateChannelList = function () {
 	$.getJSON('/api/channels', function (data) {
 		var channels = data.channels;
 		channelList.empty();
+
+		var names = {};
 		for (var i = 0, len = channels.length; i < len; i++) (function (channel) {
+			if (!Irssw.channels[channel.name]) Irssw.channels[channel.name] = { messages : [] };
+			if (!Irssw.channels[channel.name].messages) Irssw.channels[channel.name].messages = [];
+			Irssw.channels[channel.name].refnum = channel.refnum;
+
+			names[channel.name] = true;
 			var li = $('<li></li>').text(channel.name);
 			li.click(function () {
 				Irssw.selectChannel(channel.name);
 			});
 			channelList.append(li);
 		})(channels[i]);
+
+		// delete parted channels
+		for (var key in Irssw.channels) if (Irssw.channels.hasOwnProperty(key)) {
+			var val = Irssw.channels[key];
+			if (!names[key]) {
+				delete Irssw.channels[key];
+			}
+		}
 	});
+};
+Irssw.createLine = function (message) {
+	var date    = new Date(+message.time * 1000);
+	var line = $("<div class='message'></div>");
+	var meta = $('<span class="meta"></span>').appendTo(line);
+	var time = $('<time></time>').attr('datetime',
+		String(10000 + date.getUTCFullYear()).substring(1) + "-" +
+		String(101 + date.getUTCMonth()).substring(1) + "-" +
+		String(100 + date.getUTCDate()).substring(1) + "T" +
+		String(100 + date.getUTCHours()).substring(1) + ":" +
+		String(100 + date.getUTCMinutes()).substring(1) + ":" +
+		String(100 + date.getUTCSeconds()).substring(1) + "." +
+		String(1000 + date.getUTCMilliseconds()).substring(1) + 'Z'
+	).text(date.toLocaleString()).appendTo(meta);
+	$('<span class="nick"></span>').text(message.nick).appendTo(line);
+	$('<div class="body"></div>').append(format(message.text)).appendTo(line);
+	DateRelative.update(time[0]);
+	return line;
 };
 Irssw.updateChannelLog = function (name) {
 	var streamBody  = $('#log');
-	$.getJSON('/api/channel', { c : name, t : new Date().getTime() }, function (data) {
+	var channel     = Irssw.channels[name] || { messages : [] };
+	var after       = channel.messages && channel.messages[0] ? channel.messages[0].time : 0;
+	$.getJSON('/api/channel', { c : name, after : after, t : new Date().getTime() }, function (data) {
 		var messages = data.messages;
-		streamBody.empty();
+		if (Irssw.currentChannel == name) {
+			messages = data.messages.reverse();
+		} else {
+			streamBody.empty();
+			messages = messages.concat(channel.messages.concat().reverse());
+		}
 		for (var i = 0, len = messages.length; i < len; i++) {
 			var message = messages[i];
-			var date    = new Date(+message.time * 1000);
-			var line = $("<div class='message'></div>");
-			var meta = $('<span class="meta"></span>').appendTo(line);
-			var time = $('<time></time>').attr('datetime', 
-				String(10000 + date.getUTCFullYear()).substring(1) + "-" +
-				String(101 + date.getUTCMonth()).substring(1) + "-" +
-				String(100 + date.getUTCDate()).substring(1) + "T" +
-				String(100 + date.getUTCHours()).substring(1) + ":" +
-				String(100 + date.getUTCMinutes()).substring(1) + ":" +
-				String(100 + date.getUTCSeconds()).substring(1) + "." +
-				String(1000 + date.getUTCMilliseconds()).substring(1) + 'Z'
-			).text(date.toLocaleString()).appendTo(meta);
-			$('<span class="nick"></span>').text(message.nick).appendTo(line);
-			$('<div class="body"></div>').append(format(message.text)).appendTo(line);
-			DateRelative.update(time[0]);
-			streamBody.append(line);
+			channel.messages.unshift(message);
+			var line = Irssw.createLine(message);
+			streamBody.prepend(line);
+			Irssw.currentChannel = name;
 		}
+		if (channel.messages.length > 50) channel.messages.length = 50;
 	});
 };
 Irssw.selectChannel = function (name) {
@@ -276,7 +305,7 @@ $(function () {
 	DateRelative.setupAutoUpdate();
 
 	Irssw.updateChannelList();
-	Irssw.selectChannel({ name : '#twitter@twitter' });
+	Irssw.selectChannel('#twitter@twitter');
 	setInterval(function () {
 		Irssw.updateChannelList();
 	}, 30 * 1000);
