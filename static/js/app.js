@@ -1,4 +1,5 @@
-document.createElement('time');
+document.createElement('time'); // bad hack
+
 /* constant */
 MSGLEVEL_CRAP         = 0x0000001;
 MSGLEVEL_MSGS         = 0x0000002;
@@ -144,7 +145,90 @@ function format (text) {
 	return ret;
 }
 
-function updateChannelList () {
+function DateRelative () { this.init.apply(this, arguments) };
+DateRelative.prototype = {
+	init : function (value) {
+		this.value = value + 0;
+	},
+	update : function () {
+		var diff   = Math.floor((new Date().getTime() - this.value) / 1000);
+		var future = diff < 0;
+		if (future) diff = -diff;
+		if (diff < 60) {
+			this.number   = diff;
+			this.unit     = 'second';
+			this.isFuture = future;
+			return this;
+		}
+		diff = Math.floor(diff / 60);
+		if (diff < 60) {
+			this.number   = diff;
+			this.unit     = 'minute';
+			this.isFuture = future;
+			return this;
+		}
+		diff = Math.floor(diff / 60);
+		if (diff < 24) {
+			this.number   = diff;
+			this.unit     = 'hour';
+			this.isFuture = future;
+			return this;
+		}
+		diff = Math.floor(diff / 24);
+		if (diff < 365) {
+			this.number   = diff;
+			this.unit     = 'date';
+			this.isFuture = future;
+			return this;
+		}
+		diff = Math.floor(diff / 365);
+		this.number   = diff;
+		this.unit     = 'year';
+		this.isFuture = future;
+		return this;
+	},
+	valueOf : function () { return this.value }
+};
+DateRelative.update = function (target) {
+	var dtrl = target._dtrl;
+	if (!dtrl) {
+		var dtf = target.getAttribute('datetime').match(/(\d+)-(\d+)-(\d+)T(\d+):(\d+):(\d+)(?:\.(\d+))?Z/);
+		target._dtrl = dtrl = new DateRelative(Date.UTC(+dtf[1], +dtf[2] - 1, +dtf[3], +dtf[4], +dtf[5], +dtf[6]));
+	}
+	dtrl.update();
+
+	var locale = navigator.userAgent.split(/[();]\s*/)[4];
+	var format;
+	if (/ja/.test(locale)) {
+		format = dtrl.number + {
+			'second' : '秒',
+			'minute' : '分',
+			'hour' : '時',
+			'date' : '日',
+			'year' : '年'
+		}[dtrl.unit] + (dtrl.isFuture ? '後' : '前')
+	} else {
+		format = dtrl.number + ' ' +
+				 dtrl.unit + (dtrl.number == 0 || dtrl.number > 1 ? 's ' : ' ') +
+				 (dtrl.isFuture ? 'after' : 'ago');
+	}
+	target.innerHTML = format;
+};
+DateRelative.setupAutoUpdate = function (parent) {
+	return setInterval(function () {
+		parent = parent || document;
+		var targets = parent.getElementsByTagName('time');
+		for (var i = 0, len = targets.length; i < len; i++) {
+			DateRelative.update(targets[i]);
+		}
+	}, 60 * 1000);
+};
+
+
+Irssw = {};
+Irssw.channels = {};
+Irssw.currentChannel = null;
+Irssw.updateChannelList = function () {
 	var channelList = $('#channels ul');
 	$.getJSON('/api/channels', function (data) {
 		var channels = data.channels;
@@ -152,16 +236,15 @@ function updateChannelList () {
 		for (var i = 0, len = channels.length; i < len; i++) (function (channel) {
 			var li = $('<li></li>').text(channel.name);
 			li.click(function () {
-				selectChannel(channel);
+				Irssw.selectChannel(channel.name);
 			});
 			channelList.append(li);
 		})(channels[i]);
 	});
-}
-
-function updateChannelLog (channel) {
+};
+Irssw.updateChannelLog = function (name) {
 	var streamBody  = $('#log');
-	$.getJSON('/api/channel', { c : channel.name, t : new Date().getTime() }, function (data) {
+	$.getJSON('/api/channel', { c : name, t : new Date().getTime() }, function (data) {
 		var messages = data.messages;
 		streamBody.empty();
 		for (var i = 0, len = messages.length; i < len; i++) {
@@ -184,98 +267,18 @@ function updateChannelLog (channel) {
 			streamBody.append(line);
 		}
 	});
-}
-
-function DateRelative () { this.init.apply(this, arguments) };
-DateRelative.prototype = {
-	init : function (value) {
-		this.value = value + 0;
-	},
-	update : function () {
-		var diff   = Math.floor((new Date().getTime() - this.value) / 1000);
-		var future = diff < 0;
-		if (future) diff = -diff;
-		if (diff < 60) {
-			this.number   = diff;
-			this.unit     = 'seconds';
-			this.isFuture = future;
-			return this;
-		}
-		diff = Math.floor(diff / 60);
-		if (diff < 60) {
-			this.number   = diff;
-			this.unit     = 'minutes';
-			this.isFuture = future;
-			return this;
-		}
-		diff = Math.floor(diff / 60);
-		if (diff < 24) {
-			this.number   = diff;
-			this.unit     = 'hours';
-			this.isFuture = future;
-			return this;
-		}
-		diff = Math.floor(diff / 24);
-		if (diff < 365) {
-			this.number   = diff;
-			this.unit     = 'dates';
-			this.isFuture = future;
-			return this;
-		}
-		diff = Math.floor(diff / 365);
-		this.number   = diff;
-		this.unit     = 'years';
-		this.isFuture = future;
-		return this;
-	},
-	valueOf : function () { return this.value }
 };
-DateRelative.update = function (target) {
-	var dtrl = target._dtrl;
-	if (!dtrl) {
-		var dtf = target.getAttribute('datetime').match(/(\d+)-(\d+)-(\d+)T(\d+):(\d+):(\d+)(?:\.(\d+))?Z/);
-		target._dtrl = dtrl = new DateRelative(Date.UTC(+dtf[1], +dtf[2] - 1, +dtf[3], +dtf[4], +dtf[5], +dtf[6]));
-	}
-	dtrl.update();
-
-	var lang = /JST/.test(new Date().toString()) ? 'ja' : 'en'; // super bad hack
-	var format;
-	if (lang == 'ja') {
-		format = dtrl.number + {
-			'seconds' : '秒',
-			'minutes' : '分',
-			'hours' : '時',
-			'dates' : '日',
-			'years' : '年'
-		}[dtrl.unit] + (dtrl.isFuture ? '後' : '前')
-	} else {
-		format = dtrl.number + ' ' +
-				 dtrl.unit + (dtrl.number == 0 || dtrl.number > 1 ? 's ' : ' ') +
-				 (dtrl.isFuture ? 'after' : 'ago');
-	}
-	target.innerHTML = format;
+Irssw.selectChannel = function (name) {
+	Irssw.updateChannelLog(name);
 };
-DateRelative.setupAutoUpdate = function (parent) {
-	return setInterval(function () {
-		parent = parent || document;
-		var targets = parent.getElementsByTagName('time');
-		for (var i = 0, len = targets.length; i < len; i++) {
-			DateRelative.update(targets[i]);
-		}
-	}, 60 * 1000);
-};
-
-function selectChannel (channel) {
-	updateChannelLog(channel);
-}
 
 $(function () {
 	DateRelative.setupAutoUpdate();
 
-	updateChannelList();
-	selectChannel({ name : '#twitter@twitter' });
+	Irssw.updateChannelList();
+	Irssw.selectChannel({ name : '#twitter@twitter' });
 	setInterval(function () {
-		updateChannelList();
+		Irssw.updateChannelList();
 	}, 30 * 1000);
 });
 
