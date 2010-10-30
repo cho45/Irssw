@@ -70,11 +70,45 @@ parseText.types = [
 ];
 parseText.re = new RegExp('(' + parseText.types.join('|') + ')', 'g');
 
+function is_deepy (got, expected) {
+	got = util.inspect(got);
+	expected = util.inspect(expected)
+	if (got == expected) {
+		console.log('ok');
+	} else {
+		console.log('ng');
+		console.log('# got:');
+		console.log(got.replace(/^/gm, '# '));
+		console.log('# expected:');
+		console.log(expected.replace(/^/gm, '# '));
+	}
+}
 
-// var text = "\u00049/-\u0004?/!\u00049/-\u0004g \u0004;/conee\u0004g \u00048/[\u0004g\u00043/~shigi@pool-98-118-120-51.bstnma.fios.verizon.net\u0004g\u00048/]\u0004g has joined \u0004c#jquery@fn\u0004c"
-// var text = "\u00048/<\u0004g \u0004gberttrand\u0004g\u00048/>\u0004g \u0004ehow do I use the attribute selector to have the criteria \u0002*between*\u0002 two values... e.g. select all inputs where the value is greater than 2 but less than 5";
-var text = "\u00048/<\u0004g \u0004gnekokak\u0004g\u00048/>\u0004g \u0004e@likk 午前半休なんてただの飾りです。気分は全休ですという現れですね \u000310 [kyu]";
+var text = "\u00048/<\u0004g \u0004gberttrand\u0004g\u00048/>\u0004g \u0004eAAAAA  \u0002*STRONG*\u0002 ...";
+is_deepy(parseText("\u00048/<\u0004g \u0004gberttrand\u0004g\u00048/>\u0004g \u0004eAAAAA  \u0002*STRONG*\u0002 ..."),
+	[ { attr: { fg: 47 }, text: '<' }
+	, { attr: {}, text: ' ' }
+	, { attr: {}, text: 'berttrand' }
+	, { attr: { fg: 47 }, text: '>' }
+	, { attr: {}, text: ' ' }
+	, { attr: { indent: true }, text: 'AAAAA  ' }
+	, { attr: { indent: true, bold: true }
+	  , text: '*STRONG*'
+	  }
+	, { attr: { indent: true, bold: false }, text: ' ...' }
+	]
+);
 
-var ret = parseText(text);
-console.log(util.inspect(ret));
+is_deepy(parseText("\u00048/<\u0004g \u0004gfoobar\u0004g\u00048/>\u0004g \u0004eAAAAAA \u000310 [kyu]"),
+	[ { attr: { fg: 47 }, text: '<' }
+	, { attr: {}, text: ' ' }
+	, { attr: {}, text: 'foobar' }
+	, { attr: { fg: 47 }, text: '>' }
+	, { attr: {}, text: ' ' }
+	, { attr: { indent: true }, text: 'AAAAAA ' }
+	, { attr: { indent: true, fg: 49, bg: 48 }
+		  , text: ' [kyu]'
+			    }
+	]
+);
 
