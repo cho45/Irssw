@@ -8,12 +8,18 @@ use JSON::XS;
 use Irssi::Irc;
 use AnyEvent::MPRPC;
 
+{
+package Irssi::Nick;
+};
+
 our $targets = {};
 our $server = mprpc_server '127.0.0.1', '4423';
 $server->reg_cb(
 	command => sub {
-		my ($res, $refnum, $command) = @_;
-		my $item = Irssi::window_find_refnum($refnum);
+		my ($res, $args) = @_;
+		my ($refnum, $command) = @$args;
+		no warnings;
+		my $item = Irssi::window_find_refnum($refnum+0);
 		if ($item) {
 			$item->command($command);
 			$res->result('ok');

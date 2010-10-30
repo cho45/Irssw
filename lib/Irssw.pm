@@ -59,6 +59,17 @@ route '/login', method => POST, action => sub {
 	}
 };
 
+route '/api/command', method => POST, action => sub {
+	my ($r) = @_;
+	$r->require_user or return;
+	my $refnum  = $r->req->param('refnum');
+	my $command = $r->req->param('command');
+	my $result  = irssi->call('command' => [$refnum => $command])->recv;
+	$r->json({
+		status => $result
+	});
+};
+
 route '/api/channels', method => GET, action => sub {
 	my ($r) = @_;
 	$r->require_user or return;
@@ -88,6 +99,14 @@ route '/api/channel', method => GET, action => sub {
 
 	my $target  = decode_utf8 $r->req->param('c');
 	my $channel = irssi->call('target' => $target)->recv;
+
+	unless ($channel->{messages}) {
+		$r->json({
+			channel  => $target,
+			messages => [],
+		});
+		return;
+	}
 
 	my $after   = $r->req->param('after')  || 0;
 	my $before  = $r->req->param('before') || $channel->{messages}->[-1]->{time} + 1;

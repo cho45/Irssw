@@ -295,21 +295,45 @@ Irssw.updateChannelLog = function (name) {
 			channel.messages.unshift(message);
 			var line = Irssw.createLine(message);
 			streamBody.prepend(line);
-			Irssw.currentChannel = name;
 		}
 		if (channel.messages.length > 50) channel.messages.length = 50;
 		DateRelative.updateAll();
+		Irssw.currentChannel = name;
 	});
 };
 Irssw.selectChannel = function (name) {
+	$('#input-title').text(name);
 	Irssw.updateChannelLog(name);
+};
+Irssw.msg = function (text) {
+	var name = Irssw.currentChannel;
+	var channel = Irssw.channels[name] || { messages : [] };
+	$.ajax({
+		url : '/api/command',
+		type: 'post',
+		dataType: 'json',
+		data : {
+			refnum : channel.refnum,
+			command : 'msg ' + name + ' ' + text,
+		},
+		success : function (data) {
+			Irssw.updateChannelLog(name);
+		}
+	});
 };
 
 $(function () {
 	DateRelative.setupAutoUpdate();
 
 	Irssw.updateChannelList();
-	Irssw.selectChannel('#twitter@twitter');
+	Irssw.selectChannel('#chokan@ircnet');
+	$('#input form').submit(function () {
+		var text = $('#input-text').val();
+		Irssw.msg(text);
+		$('#input-text').val('');
+		return false;
+	});
+
 	setInterval(function () {
 		Irssw.updateChannelList();
 	}, 30 * 1000);
