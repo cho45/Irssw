@@ -293,8 +293,6 @@ Irssw.updateChannelLog = function (name) {
 			messages = channel.messages.concat().reverse();
 		}
 
-		console.log(channel.messages);
-
 		for (var i = 0, len = messages.length; i < len; i++) {
 			var message = messages[i];
 			var line = Irssw.createLine(message);
