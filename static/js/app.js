@@ -280,9 +280,13 @@ Irssw.createLine = function (message) {
 };
 Irssw.updateChannelLog = function (name) {
 	var streamBody  = $('#log');
-	var channel     = Irssw.channels[name] || { messages : [] };
+	var channel     = Irssw.channels[name];
+	if (!channel) {
+		channel = Irssw.channels[name] = { messages : [] };
+	}
 	var after       = channel.messages && channel.messages[0] ? channel.messages[0].time : 0;
 	$.getJSON('/api/channel', { c : name, after : after, t : new Date().getTime() }, function (data) {
+		try {
 		var messages = data.messages;
 		channel.messages = messages.concat(channel.messages);
 
@@ -302,6 +306,8 @@ Irssw.updateChannelLog = function (name) {
 		DateRelative.updateAll();
 		
 		Irssw.currentChannel = name;
+		} catch (e) { alert(e) }
+		
 	});
 };
 Irssw.selectChannel = function (name) {
