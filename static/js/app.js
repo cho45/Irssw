@@ -284,20 +284,25 @@ Irssw.updateChannelLog = function (name) {
 	var after       = channel.messages && channel.messages[0] ? channel.messages[0].time : 0;
 	$.getJSON('/api/channel', { c : name, after : after, t : new Date().getTime() }, function (data) {
 		var messages = data.messages;
+		channel.messages = messages.concat(channel.messages);
+
 		if (Irssw.currentChannel == name) {
-			messages = data.messages.reverse();
+			messages = messages.reverse();
 		} else {
 			streamBody.empty();
-			messages = channel.messages.concat(messages).reverse();
+			messages = channel.messages.concat().reverse();
 		}
+
+		console.log(channel.messages);
+
 		for (var i = 0, len = messages.length; i < len; i++) {
 			var message = messages[i];
-			channel.messages.unshift(message);
 			var line = Irssw.createLine(message);
 			streamBody.prepend(line);
 		}
 		if (channel.messages.length > 50) channel.messages.length = 50;
 		DateRelative.updateAll();
+		
 		Irssw.currentChannel = name;
 	});
 };

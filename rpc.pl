@@ -9,7 +9,7 @@ use Irssi::Irc;
 use AnyEvent::MPRPC;
 
 {
-package Irssi::Nick;
+	package Irssi::Nick; # wtf?
 };
 
 our $targets = {};
