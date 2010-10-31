@@ -10,14 +10,22 @@ our @EXPORT = qw(html json);
 
 sub html {
 	my ($r, $name) = @_;
-	Text::MicroMason->use or die;
-	my $m  = Text::MicroMason->new(qw/ -SafeServerPages -AllowGlobals /);
-	# $m->set_globals(map { ("\$$_", $r->stash->{$_}) } keys %{ $r->stash });
-	$m->set_globals("\$r", $r);
+	Text::MicroTemplate->use or die;
 
 	my $template = decode_utf8($r->config->root->file('templates', $name)->slurp);
 	eval {
-		my $content = $m->execute(text => $template);
+		my $rr = do {
+			my $mt = Text::MicroTemplate->new( template => $template );
+			my $cc = $mt->code;
+			eval qq{
+				sub {
+					local \$_ = shift;
+					my \$r = \$_->{r};
+					$cc->();
+				}
+			};
+		};
+		my $content = $rr->($r->stash);
 
 		$r->res->header("Content-Type" => "text/html");
 		$r->res->body(encode_utf8($content));

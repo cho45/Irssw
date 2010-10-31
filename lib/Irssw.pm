@@ -11,6 +11,7 @@ use Encode;
 use Irssw::Router;
 use Irssw::Request;
 use Irssw::View;
+use Irssw::User;
 
 use Irssw::Config;
 
@@ -62,6 +63,7 @@ route '/login', method => POST, action => sub {
 route '/api/command', method => POST, action => sub {
 	my ($r) = @_;
 	$r->require_user or return;
+	$r->require_rks  or return;
 	my $refnum  = $r->req->param('refnum');
 	my $command = $r->req->param('command');
 	my $result  = irssi->call('command' => [$refnum => $command])->recv;
@@ -183,6 +185,7 @@ sub config {
 
 sub _run {
 	my ($self) = @_;
+	$self->stash(r => $self);
 	Irssw::Router->dispatch($self);
 	$self->res->finalize;
 }
@@ -218,7 +221,13 @@ sub session {
 
 sub user {
 	my ($self) = @_;
-	!!$self->session->{authorized};
+	if ($self->session->{authorized}) {
+		$self->{_user} ||= Irssw::User->new(
+			session_id => $self->req->session_options->{id}
+		);
+	} else {
+		undef;
+	}
 }
 
 sub require_user {
@@ -227,6 +236,17 @@ sub require_user {
 		1;
 	} else {
 		$self->res->redirect('/login');
+		0;
+	}
+}
+
+sub require_rks {
+	my ($self) = @_;
+	my $rks = $self->req->param('rks') || '';
+	if ($self->user && $self->user->rks eq $rks) {
+		1;
+	} else {
+		$self->res->code(403);
 		0;
 	}
 }

@@ -315,6 +315,7 @@ Irssw.msg = function (text) {
 		data : {
 			refnum : channel.refnum,
 			command : 'msg ' + name + ' ' + text,
+			rks : User.rks
 		},
 		success : function (data) {
 			Irssw.updateChannelLog(name);
