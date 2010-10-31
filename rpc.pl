@@ -96,6 +96,16 @@ Irssi::signal_add_last('message public', sub {
 	});
 });
 
+Irssi::signal_add_last('message own_public', sub {
+	my ($server, $msg, $target, $origintarget) = @_;
+	append_message($target, +{
+		level => MSGLEVEL_PUBLIC,
+		nick  => $server->{nick},
+		text  => $msg,
+		mask  => $server->{address},
+	});
+});
+
 Irssi::signal_add_last('message private', sub {
 	my ($server, $recoded, $nick, $addr, $target) = @_;
 	append_message($target, +{
@@ -103,6 +113,16 @@ Irssi::signal_add_last('message private', sub {
 		nick  => $nick,
 		text  => $recoded,
 		mask  => $addr,
+	});
+});
+
+Irssi::signal_add_last('message own_private', sub {
+	my ($server, $msg, $target, $origintarget) = @_;
+	append_message($target, +{
+		level => MSGLEVEL_MSGS,
+		nick  => $server->{nick},
+		text  => $msg,
+		mask  => $server->{address},
 	});
 });
 
@@ -116,6 +136,16 @@ Irssi::signal_add_last('message irc action', sub {
 	});
 });
 
+Irssi::signal_add_last('message irc own_action', sub {
+	my ($server, $msg, $target, $origintarget) = @_;
+	append_message($target, +{
+		level => MSGLEVEL_ACTIONS,
+		nick  => $server->{nick},
+		text  => $msg,
+		mask  => $server->{address},
+	});
+});
+
 Irssi::signal_add_last('message irc notice', sub {
 	my ($server, $recoded, $nick, $addr, $target) = @_;
 	append_message($target, +{
@@ -123,6 +153,16 @@ Irssi::signal_add_last('message irc notice', sub {
 		nick  => $nick,
 		text  => $recoded,
 		mask  => $addr,
+	});
+});
+
+Irssi::signal_add_last('message irc own_notice', sub {
+	my ($server, $msg, $target, $origintarget) = @_;
+	append_message($target, +{
+		level => MSGLEVEL_NOTICES,
+		nick  => $server->{nick},
+		text  => $msg,
+		mask  => $server->{address},
 	});
 });
 
