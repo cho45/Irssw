@@ -37,7 +37,7 @@ route '/', action => sub {
 route '/touch/', action => sub {
 	my ($r) = @_;
 	$r->require_user or return;
-	$r->html('index.html');
+	$r->html('touch/index.html');
 };
 
 #route '/:id', id => qr/\d+/, action => sub {

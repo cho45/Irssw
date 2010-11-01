@@ -321,100 +321,121 @@ Irssw.command = function (text) {
 };
 
 
-if (navigator.userAgent.indexOf('Android') != -1 ||
-    navigator.userAgent.indexOf('iPhone') != -1) {
-} else {
-	$(function () {
-		DateRelative.setupAutoUpdate();
+$(function () {
+	DateRelative.setupAutoUpdate();
 
+	isTouch = (
+		navigator.userAgent.indexOf('Android') != -1 ||
+		navigator.userAgent.indexOf('iPhone') != -1
+	);
 
-		var streamBody  = $('#log');
-		var channelList = $('#channels ul');
-		var loading     = $('#loading');
+	var streamBody  = $('#log');
+	var channelList = $('#channels ul');
+	var input       = $('#input');
+	var loading     = $('#loading');
 
-		function updateChannelLog (name) {
-			if (updateChannelLog.loading) return;
-			updateChannelLog.loading = true;
+	if (isTouch) {
+		streamBody.hide();
+		input.hide();
+	}
 
-			location.hash = name;
-			$('#input-title').text(name);
-			if (Irssw.currentChannel != name) {
-				streamBody.empty();
-			}
+	function updateChannelLog (name) {
+		if (updateChannelLog.loading) return;
+		updateChannelLog.loading = true;
 
-			loading.prependTo(streamBody);
-			loading.show();
-
-			return Irssw.updateChannelLog(name, function (message) {
-				var line = Irssw.createLine(message);
-				streamBody.prepend(line);
-			}).
-			next(function () {
-				loading.hide();
-				DateRelative.updateAll();
-				updateChannelLog.loading = false;
-				updateChannelList();
-			}).
-			error(function (e) {
-				alert('updateChannelLog: ' +e);
-			});
+		location.hash = name;
+		$('#input-title').text(name);
+		if (Irssw.currentChannel != name) {
+			streamBody.empty();
 		}
 
-		function updateChannelList () {
-			if (updateChannelList.loading) return;
-			updateChannelList.loading = true;
+		loading.prependTo(streamBody);
+		loading.show();
 
-			return Irssw.updateChannelList().
-			next(function (channels) {
-				channelList.empty();
-				for (var i = 0, len = channels.length; i < len; i++) (function (channel) {
-					var channel = channels[i];	
-					var li = $('<li></li>');
-					$('<span class="channel-name"></span>').text(channel.name).appendTo(li);
-					if (channel.unread) {
-						$('<span class="unread"></span>').text(channel.unread).appendTo(li);
-					}
-					li.click(function () {
-						updateChannelLog(channel.name);
-					});
-					channelList.append(li);
-				})(channels[i]);
-			}).
-			next(function () {
-				updateChannelList.loading = false;
-			}).
-			error(function (e) {
-				alert('updateChannelList: ' +e);
-			});
-		}
-
-		$('#input form').submit(function () {
-			try {
-			var text = $('#input-text').val();
-			Irssw.command(text).
-			next(function () {
-				updateChannelLog(Irssw.currentChannel);
-				updateChannelList();
-			});
-			$('#input-text').val('');
-			} catch (e) { alert(e) }
-			return false;
-		});
-
-		$(window).hashchange(function () {
-			if (location.hash) {
-				updateChannelLog(location.hash);
-			} else {
-				updateChannelList();
-			}
-		});
-
-		updateChannelList();
-		updateChannelLog(location.hash);
-
-		setInterval(function () {
+		return Irssw.updateChannelLog(name, function (message) {
+			var line = Irssw.createLine(message);
+			streamBody.prepend(line);
+		}).
+		next(function () {
+			loading.hide();
+			DateRelative.updateAll();
+			updateChannelLog.loading = false;
 			updateChannelList();
-		}, 30 * 1000);
+		}).
+		error(function (e) {
+			alert('updateChannelLog: ' +e);
+		});
+	}
+
+	function updateChannelList () {
+		if (updateChannelList.loading) return;
+		updateChannelList.loading = true;
+
+		return Irssw.updateChannelList().
+		next(function (channels) {
+			channelList.empty();
+			for (var i = 0, len = channels.length; i < len; i++) (function (channel) {
+				var channel = channels[i];	
+				var li = $('<li></li>');
+				$('<span class="channel-name"></span>').text(channel.name).appendTo(li);
+				if (channel.unread) {
+					$('<span class="unread"></span>').text(channel.unread).appendTo(li);
+				}
+				li.click(function () {
+					updateChannelLog(channel.name);
+					if (isTouch) {
+						input.show();
+						streamBody.show();
+						channelList.hide();
+					}
+				});
+				channelList.append(li);
+			})(channels[i]);
+		}).
+		next(function () {
+			updateChannelList.loading = false;
+		}).
+		error(function (e) {
+			alert('updateChannelList: ' +e);
+		});
+	}
+
+	$('#input form').submit(function () {
+		try {
+		var text = $('#input-text').val();
+		Irssw.command(text).
+		next(function () {
+			updateChannelLog(Irssw.currentChannel);
+			updateChannelList();
+		});
+		$('#input-text').val('');
+		} catch (e) { alert(e) }
+		return false;
 	});
-}
+
+	$(window).hashchange(function () {
+		if (location.hash) {
+			updateChannelLog(location.hash);
+			if (isTouch) {
+				input.show();
+				streamBody.show();
+				channelList.hide();
+			}
+		} else {
+			updateChannelList();
+			if (isTouch) {
+				input.hide();
+				streamBody.hide();
+				channelList.show();
+			}
+		}
+	});
+
+	updateChannelList();
+	updateChannelLog(location.hash);
+
+	setInterval(function () {
+		updateChannelList();
+	}, 30 * 1000);
+});
 
