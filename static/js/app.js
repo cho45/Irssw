@@ -344,6 +344,7 @@ $(function () {
 		if (updateChannelLog.loading) return;
 		updateChannelLog.loading = true;
 
+		document.title =  name;
 		location.hash = name;
 		$('#input-title').text(name);
 		if (Irssw.currentChannel != name) {
