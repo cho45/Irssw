@@ -317,13 +317,20 @@ Irssw.selectChannel = function (name) {
 Irssw.msg = function (text) {
 	var name = Irssw.currentChannel;
 	var channel = Irssw.channels[name] || { messages : [] };
+	var command;
+	if (text.match(/^\//)) {
+		command = text.substring(1);
+	} else{
+		command = 'msg ' + name + ' ' + text;
+	}
+
 	$.ajax({
 		url : '/api/command',
 		type: 'post',
 		dataType: 'json',
 		data : {
 			refnum : channel.refnum,
-			command : 'msg ' + name + ' ' + text,
+			command : command,
 			rks : User.rks
 		},
 		success : function (data) {
@@ -339,9 +346,12 @@ $(function () {
 	Irssw.updateChannelList();
 	Irssw.selectChannel('#chokan@ircnet');
 	$('#input form').submit(function () {
+		try {
 		var text = $('#input-text').val();
 		Irssw.msg(text);
 		$('#input-text').val('');
+		} catch (e) { alert(e) }
+		
 		return false;
 	});
 
