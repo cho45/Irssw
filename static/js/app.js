@@ -323,95 +323,11 @@ Irssw.command = function (text) {
 
 if (navigator.userAgent.indexOf('Android') != -1 ||
     navigator.userAgent.indexOf('iPhone') != -1) {
-
-	$(function () {
-		DateRelative.setupAutoUpdate();
-
-		var streamBody  = $('#log');
-		var channelList = $('#channels ul');
-		var loading     = $('#loading');
-
-		function updateChannelLog (name) {
-			if (updateChannelLog.loading) return;
-			updateChannelLog.loading = true;
-
-			location.hash = name;
-			$('#input-title').text(name);
-			if (Irssw.currentChannel != name) {
-				streamBody.empty();
-			}
-
-			loading.prependTo(streamBody);
-			loading.show();
-
-			return Irssw.updateChannelLog(name, function (message) {
-				var line = Irssw.createLine(message);
-				streamBody.prepend(line);
-			}).
-			next(function () {
-				loading.hide();
-				DateRelative.updateAll();
-				updateChannelLog.loading = false;
-				updateChannelList();
-			}).
-			error(function (e) {
-				alert('updateChannelLog: ' +e);
-			});
-		}
-
-		function updateChannelList () {
-			if (updateChannelList.loading) return;
-			updateChannelList.loading = true;
-
-			return Irssw.updateChannelList().
-			next(function (channels) {
-				channelList.empty();
-				for (var i = 0, len = channels.length; i < len; i++) (function (channel) {
-					var channel = channels[i];	
-					var li = $('<li></li>');
-					$('<span class="channel-name"></span>').text(channel.name).appendTo(li);
-					if (channel.unread) {
-						$('<span class="unread"></span>').text(channel.unread).appendTo(li);
-					}
-					li.click(function () {
-						updateChannelLog(channel.name);
-					});
-					channelList.append(li);
-				})(channels[i]);
-			}).
-			next(function () {
-				updateChannelList.loading = false;
-			}).
-			error(function (e) {
-				alert('updateChannelList: ' +e);
-			});
-		}
-
-		$('#input form').submit(function () {
-			try {
-			var text = $('#input-text').val();
-			Irssw.command(text).
-			next(function () {
-				updateChannelLog(Irssw.currentChannel);
-				updateChannelList();
-			});
-			$('#input-text').val('');
-			} catch (e) { alert(e) }
-			return false;
-		});
-
-		updateChannelList();
-		var channel = decodeURIComponent(location.hash);
-		updateChannelLog(channel);
-
-		setInterval(function () {
-			updateChannelList();
-		}, 30 * 1000);
-	});
 } else {
 	$(function () {
 		DateRelative.setupAutoUpdate();
 
+
 		var streamBody  = $('#log');
 		var channelList = $('#channels ul');
 		var loading     = $('#loading');
@@ -485,9 +401,16 @@ if (navigator.userAgent.indexOf('Android') != -1 ||
 			return false;
 		});
 
+		$(window).hashchange(function () {
+			if (location.hash) {
+				updateChannelLog(location.hash);
+			} else {
+				updateChannelList();
+			}
+		});
+
 		updateChannelList();
-		var channel = decodeURIComponent(location.hash);
-		updateChannelLog(channel);
+		updateChannelLog(location.hash);
 
 		setInterval(function () {
 			updateChannelList();

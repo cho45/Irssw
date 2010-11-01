@@ -156,3 +156,7 @@ body {
 	top: 1em;
 	right: 1em;
 }
+
+@media only screen and (max-device-width: 480px) {
+
+}
