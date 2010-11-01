@@ -33,7 +33,14 @@ $server->reg_cb(
 		$res->result(+{
 			map {
 				my $t = +{ %{ $targets->{$_} } };
-				delete $t->{messages};
+				my $messages = delete $t->{messages} || [];
+				if ($t->{read}) {
+					$t->{unread} = grep {
+						$_->{time} > $t->{read}
+					} @$messages;
+				} else {
+					$t->{unread} = $t->{data_level} ? @$messages : 0;
+				}
 				$_ => $t;
 			}
 			keys %$targets
@@ -42,6 +49,7 @@ $server->reg_cb(
 	target => sub {
 		my ($res, $target) = @_;
 		update_channels();
+		mark_as_read($target);
 		$res->result($targets->{$target});
 	},
 	eval => sub {
@@ -51,13 +59,20 @@ $server->reg_cb(
 );
 
 sub update_channels {
-	# TODO remove channels
+	my %names;
 	no warnings;
 	for my $win (Irssi::windows()) {
 		my $name = $win->{name} || ($win->{active} && $win->{active}->{name}) || '';
+		next unless $name;
 		my $target = $targets->{$name} ||= {};
-		$target->{refnum} = $win->{refnum};
-		$target->{name}   = $win->{name};
+		$names{$name}++;
+		$target->{refnum}     = $win->{refnum};
+		$target->{name}       = $win->{name};
+		$target->{data_level} = $win->{data_level};
+	}
+
+	for my $name (keys %$targets) {
+		delete $names{$name} unless $names{$name};
 	}
 }
 
@@ -82,6 +97,12 @@ sub append_message {
 	shift @$messages while @$messages > 500;
 }
 
+sub mark_as_read {
+	my ($name) = @_;
+	my $target = $targets->{$name} ||= {};
+	$target->{read} = time();
+}
+
 Irssi::signal_add_last('message public', sub {
 	my ($server, $recoded, $nick, $addr, $target) = @_;
 	# $server: isa Irssi::Irc::Server
@@ -98,6 +119,7 @@ Irssi::signal_add_last('message public', sub {
 
 Irssi::signal_add_last('message own_public', sub {
 	my ($server, $msg, $target, $origintarget) = @_;
+	mark_as_read($target);
 	append_message($target, +{
 		level => MSGLEVEL_PUBLIC,
 		nick  => $server->{nick},
@@ -118,6 +140,7 @@ Irssi::signal_add_last('message private', sub {
 
 Irssi::signal_add_last('message own_private', sub {
 	my ($server, $msg, $target, $origintarget) = @_;
+	mark_as_read($target);
 	append_message($target, +{
 		level => MSGLEVEL_MSGS,
 		nick  => $server->{nick},
@@ -138,6 +161,7 @@ Irssi::signal_add_last('message irc action', sub {
 
 Irssi::signal_add_last('message irc own_action', sub {
 	my ($server, $msg, $target, $origintarget) = @_;
+	mark_as_read($target);
 	append_message($target, +{
 		level => MSGLEVEL_ACTIONS,
 		nick  => $server->{nick},
@@ -158,12 +182,19 @@ Irssi::signal_add_last('message irc notice', sub {
 
 Irssi::signal_add_last('message irc own_notice', sub {
 	my ($server, $msg, $target, $origintarget) = @_;
+	mark_as_read($target);
 	append_message($target, +{
 		level => MSGLEVEL_NOTICES,
 		nick  => $server->{nick},
 		text  => $msg,
 		mask  => $server->{address},
 	});
+});
+
+Irssi::signal_add_last('window changed', sub {
+	my ($win, $oldwin) = @_;
+	my $name = $win->{name} || ($win->{active} && $win->{active}->{name}) || '';
+	mark_as_read($name);
 });
 
 #Irssi::signal_add_last('print text', sub {

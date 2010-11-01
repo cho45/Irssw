@@ -231,35 +231,6 @@ DateRelative.setupAutoUpdate = function (parent) {
 Irssw = {};
 Irssw.channels = {};
 Irssw.currentChannel = null;
-Irssw.updateChannelList = function () {
-	var channelList = $('#channels ul');
-	$.getJSON('/api/channels', function (data) {
-		var channels = data.channels;
-		channelList.empty();
-
-		var names = {};
-		for (var i = 0, len = channels.length; i < len; i++) (function (channel) {
-			if (!Irssw.channels[channel.name]) Irssw.channels[channel.name] = { messages : [] };
-			if (!Irssw.channels[channel.name].messages) Irssw.channels[channel.name].messages = [];
-			Irssw.channels[channel.name].refnum = channel.refnum;
-
-			names[channel.name] = true;
-			var li = $('<li></li>').text(channel.name);
-			li.click(function () {
-				Irssw.selectChannel(channel.name);
-			});
-			channelList.append(li);
-		})(channels[i]);
-
-		// delete parted channels
-		for (var key in Irssw.channels) if (Irssw.channels.hasOwnProperty(key)) {
-			var val = Irssw.channels[key];
-			if (!names[key]) {
-				delete Irssw.channels[key];
-			}
-		}
-	});
-};
 Irssw.createLine = function (message) {
 	var date    = new Date(+message.time * 1000);
 	var line = $("<div class='message'></div>");
@@ -278,43 +249,56 @@ Irssw.createLine = function (message) {
 	DateRelative.update(time[0]);
 	return line;
 };
-Irssw.updateChannelLog = function (name) {
-	var streamBody  = $('#log');
+Irssw.updateChannelList = function (callback) {
+	return $.getJSON('/api/channels').next(function (data) {
+		var channels = data.channels;
+
+		var names = {};
+		for (var i = 0, len = channels.length; i < len; i++) {
+			var channel = channels[i];
+			if (!Irssw.channels[channel.name]) Irssw.channels[channel.name] = { messages : [] };
+			if (!Irssw.channels[channel.name].messages) Irssw.channels[channel.name].messages = [];
+			Irssw.channels[channel.name].refnum = channel.refnum;
+			names[channel.name] = true;
+		}
+
+		// delete parted channels
+		for (var key in Irssw.channels) if (Irssw.channels.hasOwnProperty(key)) {
+			var val = Irssw.channels[key];
+			if (!names[key]) {
+				delete Irssw.channels[key];
+			}
+		}
+
+		return channels;
+	});
+};
+Irssw.updateChannelLog = function (name, callback) {
 	var channel     = Irssw.channels[name];
 	if (!channel) {
 		channel = Irssw.channels[name] = { messages : [] };
 	}
 	var after       = channel.messages && channel.messages[0] ? channel.messages[0].time : 0;
-	$.getJSON('/api/channel', { c : name, after : after, t : new Date().getTime() }, function (data) {
-		try {
+	return $.getJSON('/api/channel', { c : name, after : after, t : new Date().getTime() }, function (data) {
 		var messages = data.messages;
 		channel.messages = messages.concat(channel.messages);
 
 		if (Irssw.currentChannel == name) {
 			messages = messages.reverse();
 		} else {
-			streamBody.empty();
 			messages = channel.messages.concat().reverse();
 		}
 
 		for (var i = 0, len = messages.length; i < len; i++) {
 			var message = messages[i];
-			var line = Irssw.createLine(message);
-			streamBody.prepend(line);
+			callback(message);
 		}
 		if (channel.messages.length > 50) channel.messages.length = 50;
-		DateRelative.updateAll();
-		
+
 		Irssw.currentChannel = name;
-		} catch (e) { alert(e) }
-		
 	});
 };
-Irssw.selectChannel = function (name) {
-	$('#input-title').text(name);
-	Irssw.updateChannelLog(name);
-};
-Irssw.msg = function (text) {
+Irssw.command = function (text) {
 	var name = Irssw.currentChannel;
 	var channel = Irssw.channels[name] || { messages : [] };
 	var command;
@@ -324,7 +308,7 @@ Irssw.msg = function (text) {
 		command = 'msg ' + name + ' ' + text;
 	}
 
-	$.ajax({
+	return $.ajax({
 		url : '/api/command',
 		type: 'post',
 		dataType: 'json',
@@ -332,31 +316,182 @@ Irssw.msg = function (text) {
 			refnum : channel.refnum,
 			command : command,
 			rks : User.rks
-		},
-		success : function (data) {
-			Irssw.updateChannelLog(name);
-			Irssw.updateChannelList();
 		}
 	});
 };
 
-$(function () {
-	DateRelative.setupAutoUpdate();
 
-	Irssw.updateChannelList();
-	Irssw.selectChannel('#chokan@ircnet');
-	$('#input form').submit(function () {
-		try {
-		var text = $('#input-text').val();
-		Irssw.msg(text);
-		$('#input-text').val('');
-		} catch (e) { alert(e) }
-		
-		return false;
+if (navigator.userAgent.indexOf('Android') != -1 ||
+    navigator.userAgent.indexOf('iPhone') != -1) {
+
+	$(function () {
+		DateRelative.setupAutoUpdate();
+
+		var streamBody  = $('#log');
+		var channelList = $('#channels ul');
+		var loading     = $('#loading');
+
+		function updateChannelLog (name) {
+			if (updateChannelLog.loading) return;
+			updateChannelLog.loading = true;
+
+			location.hash = name;
+			$('#input-title').text(name);
+			if (Irssw.currentChannel != name) {
+				streamBody.empty();
+			}
+
+			loading.prependTo(streamBody);
+			loading.show();
+
+			return Irssw.updateChannelLog(name, function (message) {
+				var line = Irssw.createLine(message);
+				streamBody.prepend(line);
+			}).
+			next(function () {
+				loading.hide();
+				DateRelative.updateAll();
+				updateChannelLog.loading = false;
+				updateChannelList();
+			}).
+			error(function (e) {
+				alert('updateChannelLog: ' +e);
+			});
+		}
+
+		function updateChannelList () {
+			if (updateChannelList.loading) return;
+			updateChannelList.loading = true;
+
+			return Irssw.updateChannelList().
+			next(function (channels) {
+				channelList.empty();
+				for (var i = 0, len = channels.length; i < len; i++) (function (channel) {
+					var channel = channels[i];	
+					var li = $('<li></li>');
+					$('<span class="channel-name"></span>').text(channel.name).appendTo(li);
+					if (channel.unread) {
+						$('<span class="unread"></span>').text(channel.unread).appendTo(li);
+					}
+					li.click(function () {
+						updateChannelLog(channel.name);
+					});
+					channelList.append(li);
+				})(channels[i]);
+			}).
+			next(function () {
+				updateChannelList.loading = false;
+			}).
+			error(function (e) {
+				alert('updateChannelList: ' +e);
+			});
+		}
+
+		$('#input form').submit(function () {
+			try {
+			var text = $('#input-text').val();
+			Irssw.command(text).
+			next(function () {
+				updateChannelLog(Irssw.currentChannel);
+				updateChannelList();
+			});
+			$('#input-text').val('');
+			} catch (e) { alert(e) }
+			return false;
+		});
+
+		updateChannelList();
+		var channel = decodeURIComponent(location.hash);
+		updateChannelLog(channel);
+
+		setInterval(function () {
+			updateChannelList();
+		}, 30 * 1000);
 	});
+} else {
+	$(function () {
+		DateRelative.setupAutoUpdate();
 
-	setInterval(function () {
-		Irssw.updateChannelList();
-	}, 30 * 1000);
-});
+		var streamBody  = $('#log');
+		var channelList = $('#channels ul');
+		var loading     = $('#loading');
+
+		function updateChannelLog (name) {
+			if (updateChannelLog.loading) return;
+			updateChannelLog.loading = true;
+
+			location.hash = name;
+			$('#input-title').text(name);
+			if (Irssw.currentChannel != name) {
+				streamBody.empty();
+			}
+
+			loading.prependTo(streamBody);
+			loading.show();
+
+			return Irssw.updateChannelLog(name, function (message) {
+				var line = Irssw.createLine(message);
+				streamBody.prepend(line);
+			}).
+			next(function () {
+				loading.hide();
+				DateRelative.updateAll();
+				updateChannelLog.loading = false;
+				updateChannelList();
+			}).
+			error(function (e) {
+				alert('updateChannelLog: ' +e);
+			});
+		}
+
+		function updateChannelList () {
+			if (updateChannelList.loading) return;
+			updateChannelList.loading = true;
+
+			return Irssw.updateChannelList().
+			next(function (channels) {
+				channelList.empty();
+				for (var i = 0, len = channels.length; i < len; i++) (function (channel) {
+					var channel = channels[i];	
+					var li = $('<li></li>');
+					$('<span class="channel-name"></span>').text(channel.name).appendTo(li);
+					if (channel.unread) {
+						$('<span class="unread"></span>').text(channel.unread).appendTo(li);
+					}
+					li.click(function () {
+						updateChannelLog(channel.name);
+					});
+					channelList.append(li);
+				})(channels[i]);
+			}).
+			next(function () {
+				updateChannelList.loading = false;
+			}).
+			error(function (e) {
+				alert('updateChannelList: ' +e);
+			});
+		}
+
+		$('#input form').submit(function () {
+			try {
+			var text = $('#input-text').val();
+			Irssw.command(text).
+			next(function () {
+				updateChannelLog(Irssw.currentChannel);
+				updateChannelList();
+			});
+			$('#input-text').val('');
+			} catch (e) { alert(e) }
+			return false;
+		});
+
+		updateChannelList();
+		var channel = decodeURIComponent(location.hash);
+		updateChannelLog(channel);
+
+		setInterval(function () {
+			updateChannelList();
+		}, 30 * 1000);
+	});
+}
 

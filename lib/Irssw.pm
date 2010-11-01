@@ -78,7 +78,7 @@ route '/api/channels', method => GET, action => sub {
 	my $targets  = irssi->call('targets')->recv;
 	my $channels = [
 		sort {
-			$b->{last_acted} <=> $a->{last_acted};
+			($b->{last_acted} || 0) <=> ($a->{last_acted} || 0);
 		}
 		map {
 			my $t = $targets->{$_};

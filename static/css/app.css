@@ -27,14 +27,15 @@ body {
 
 #input {
 	position: absolute;
-	bottom: 4em;
-	left: 5em;
+	bottom: 1em;
+	right: 2em;
+	left: 18em;
 	z-index: 9;
-	background: rgba(0, 0, 0, 0.8);
+	background: rgba(8%, 8%, 8%, 0.8);
 	padding: 1em;
 	-moz-border-radius: 0.5em;
 	-webkit-border-radius: 0.5em;
-	-webkit-box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+	-webkit-box-shadow: 0 0 5px rgba(0, 0, 0, 0.8);
 }
 
 #input #input-title {
@@ -42,8 +43,8 @@ body {
 }
 
 #input #input-text {
-	font-size: 16px;
-	width: 45em;
+	font-size: 17px;
+	width: 80%;
 }
 
 #log {
@@ -60,7 +61,7 @@ body {
 	-webkit-user-select: text;
 	-moz-border-radius: 0.5em;
 	-webkit-border-radius: 0.5em;
-	-webkit-box-shadow: 0 0 10px rgba(0, 0, 0, 1);
+	-webkit-box-shadow: 0 0 30px rgba(0, 0, 0, 1);
 	z-index: 3;
 }
 
@@ -113,7 +114,6 @@ body {
 	background: #333;
 	-moz-border-radius: 0.5em;
 	-webkit-border-radius: 0.5em;
-	-webkit-box-shadow: 0 0 10px rgba(0, 0, 0, 1);
 }
 
 #channels ul {
@@ -124,6 +124,7 @@ body {
 }
 
 #channels ul li {
+	position: relative;
 	cursor: pointer;
 	overflow: hidden;
 	white-space: nowrap;
@@ -133,4 +134,25 @@ body {
 	border-style: solid;
 	border-width: 0 0 1px 0;
 	border-color: #111;
+}
+
+#channels ul li .unread {
+	position: absolute;
+	bottom: 1em;
+	right: 3em;
+	font-size: 80%;
+	z-index: 3;
+	background: #222;
+	-moz-border-radius: 1em;
+	-webkit-border-radius: 1em;
+	width: 3em;
+	padding: 0.2em 0 0.2em 0;
+	overflow: hidden;
+	text-align: center;
+}
+
+#loading {
+	position: absolute;
+	top: 1em;
+	right: 1em;
 }
