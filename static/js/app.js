@@ -328,6 +328,7 @@ Irssw.msg = function (text) {
 		},
 		success : function (data) {
 			Irssw.updateChannelLog(name);
+			Irssw.updateChannelList();
 		}
 	});
 };
