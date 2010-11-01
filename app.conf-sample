@@ -1,0 +1,11 @@
+# :vim:set ft=perl
++{
+	_ => {
+		root => '',
+		base => '/',
+	},
+	password => "0019",
+	channel_filter => sub {
+		$_ !~ /\@twitter/
+	}
+};

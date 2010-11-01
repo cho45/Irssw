@@ -85,9 +85,10 @@ route '/api/channels', method => GET, action => sub {
 			$t->{name} =  decode_utf8 $_;
 			$t;
 		}
-#		grep {
-#			!/\@twitter/
-#		}
+		grep {
+			my $channel_filter = $r->config->{channel_filter};
+			$channel_filter ? $channel_filter->($_) : 1;
+		}
 		keys %$targets
 	];
 	$r->json({

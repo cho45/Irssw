@@ -308,6 +308,7 @@ Irssw.command = function (text) {
 		command = 'msg ' + name + ' ' + text;
 	}
 
+	alert(command);
 	return $.ajax({
 		url : '/api/command',
 		type: 'post',
