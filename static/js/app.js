@@ -432,7 +432,14 @@ $(function () {
 	});
 
 	updateChannelList();
-	updateChannelLog(location.hash);
+	if (location.hash) {
+		if (isTouch) {
+			input.show();
+			streamBody.show();
+			channelList.hide();
+		}
+		updateChannelLog(location.hash);
+	}
 
 	setInterval(function () {
 		updateChannelList();
