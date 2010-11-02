@@ -75,6 +75,10 @@ body {
 	color: #393;
 }
 
+#log span.fg56 {
+	color: #ffcc00;
+}
+
 #log span.bg48 {
 }
 
@@ -88,6 +92,11 @@ body {
 	border-style: solid;
 	border-width: 0 0 1px 0;
 	border-color: #eee;
+}
+
+#log .message.notice {
+	font-size: 90%;
+	color: #333;
 }
 
 #log .message .nick {

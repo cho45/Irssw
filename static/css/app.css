@@ -27,15 +27,15 @@ body {
 
 #input {
 	position: absolute;
-	bottom: 1em;
-	right: 2em;
-	left: 18em;
-	z-index: 9;
-	background: rgba(8%, 8%, 8%, 0.8);
+	bottom: 0;
+	right: 0em;
+	left: 17em;
+	z-index: 2;
+	height: 4em;
+	background: #333;
 	padding: 1em;
 	-moz-border-radius: 0.5em;
 	-webkit-border-radius: 0.5em;
-	-webkit-box-shadow: 0 0 5px rgba(0, 0, 0, 0.8);
 }
 
 #input #input-title {
@@ -104,7 +104,7 @@ body {
 	top: 0;
 	right: 1em;
 	left: 17em;
-	bottom: 0;
+	bottom: 6em;
 	padding: 0.5em 0.5em 0.5em 1em;
 	background: #f6f6f6;
 	color: #000;
@@ -123,6 +123,11 @@ body {
 	color: #393;
 }
 
+#log span.fg56 {
+	color: #ffcc00;
+}
+
+
 #log span.bg48 {
 }
 
@@ -136,6 +141,11 @@ body {
 	border-style: solid;
 	border-width: 0 0 1px 0;
 	border-color: #eee;
+}
+
+#log .message.notice {
+	font-size: 90%;
+	color: #333;
 }
 
 #log .message .nick {
