@@ -1,4 +1,4 @@
-#!node
+#!/usr/bin/env node
 
 util = require('util');
 
@@ -70,7 +70,9 @@ parseText.types = [
 ];
 parseText.re = new RegExp('(' + parseText.types.join('|') + ')', 'g');
 
+var count = 0;
 function is_deepy (got, expected) {
+	count++;
 	got = util.inspect(got);
 	expected = util.inspect(expected)
 	if (got == expected) {
@@ -82,6 +84,10 @@ function is_deepy (got, expected) {
 		console.log('# expected:');
 		console.log(expected.replace(/^/gm, '# '));
 	}
+}
+
+function done_testing () {
+	console.log(count + '..' + count);
 }
 
 var text = "\u00048/<\u0004g \u0004gberttrand\u0004g\u00048/>\u0004g \u0004eAAAAA  \u0002*STRONG*\u0002 ...";
@@ -111,4 +117,6 @@ is_deepy(parseText("\u00048/<\u0004g \u0004gfoobar\u0004g\u00048/>\u0004g \u0004
 			    }
 	]
 );
+
+done_testing();
 
