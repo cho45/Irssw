@@ -49,8 +49,12 @@ $server->reg_cb(
 	target => sub {
 		my ($res, $target) = @_;
 		update_channels();
-		mark_as_read($target);
 		$res->result($targets->{$target});
+	},
+	mark_as_read => sub {
+		my ($res, $target) = @_;
+		mark_as_read($target);
+		$res->result('ok');
 	},
 	eval => sub {
 		my ($res, $code) = @_;

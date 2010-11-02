@@ -234,15 +234,18 @@ Irssw.currentChannel = null;
 Irssw.createLine = function (message) {
 	var date    = new Date(+message.time * 1000);
 	var line = $("<div class='message'></div>");
+	if (message.level & MSGLEVEL_PUBLIC) line.addClass('public');
+	if (message.level & MSGLEVEL_NOTICES) line.addClass('notice');
+
 	var meta = $('<span class="meta"></span>').appendTo(line);
 	var time = $('<time></time>').attr('datetime',
-		String(10000 + date.getUTCFullYear()).substring(1) + "-" +
-		String(101 + date.getUTCMonth()).substring(1) + "-" +
-		String(100 + date.getUTCDate()).substring(1) + "T" +
-		String(100 + date.getUTCHours()).substring(1) + ":" +
-		String(100 + date.getUTCMinutes()).substring(1) + ":" +
-		String(100 + date.getUTCSeconds()).substring(1) + "." +
-		String(1000 + date.getUTCMilliseconds()).substring(1) + 'Z'
+		String(10000 + date.getUTCFullYear()).substring(1)     + "-" + 
+		String(101   + date.getUTCMonth()).substring(1)        + "-" + 
+		String(100   + date.getUTCDate()).substring(1)         + "T" + 
+		String(100   + date.getUTCHours()).substring(1)        + ":" + 
+		String(100   + date.getUTCMinutes()).substring(1)      + ":" + 
+		String(100   + date.getUTCSeconds()).substring(1)      + "." + 
+		String(1000  + date.getUTCMilliseconds()).substring(1) + 'Z'
 	).text(date.toLocaleString()).appendTo(meta);
 	$('<span class="nick"></span>').text(message.nick).appendTo(line);
 	$('<div class="body"></div>').append(format(message.text)).appendTo(line);
@@ -250,7 +253,15 @@ Irssw.createLine = function (message) {
 	return line;
 };
 Irssw.updateChannelList = function (callback) {
-	return $.getJSON('/api/channels').next(function (data) {
+	return $.ajax({
+		url : '/api/channels',
+		dataType : 'json',
+	    timeout: 30 * 1000,
+		data : {
+			t : new Date().getTime()
+		}
+	}).
+	next(function (data) {
 		var channels = data.channels;
 
 		var names = {};
@@ -258,7 +269,9 @@ Irssw.updateChannelList = function (callback) {
 			var channel = channels[i];
 			if (!Irssw.channels[channel.name]) Irssw.channels[channel.name] = { messages : [] };
 			if (!Irssw.channels[channel.name].messages) Irssw.channels[channel.name].messages = [];
-			Irssw.channels[channel.name].refnum = channel.refnum;
+			for (var key in channel) if (channel.hasOwnProperty(key)) {
+				Irssw.channels[channel.name][key] = channel[key];
+			}
 			names[channel.name] = true;
 		}
 
@@ -273,13 +286,24 @@ Irssw.updateChannelList = function (callback) {
 		return channels;
 	});
 };
-Irssw.updateChannelLog = function (name, callback) {
+Irssw.updateChannelLog = function (name, before, callback) {
 	var channel     = Irssw.channels[name];
 	if (!channel) {
 		channel = Irssw.channels[name] = { messages : [] };
 	}
-	var after       = channel.messages && channel.messages[0] ? channel.messages[0].time : 0;
-	return $.getJSON('/api/channel', { c : name, after : after, t : new Date().getTime() }, function (data) {
+	var after = channel.messages && channel.messages[0] ? channel.messages[0].time : 0;
+	return $.ajax({
+		url : '/api/channel',
+		dataType : 'json',
+	    timeout: 30 * 1000,
+	    data : {
+			c      : name,
+			after  : after,
+			before : before || 0,
+			t      : new Date().getTime()
+		}
+	}).
+	next(function (data) {
 		var messages = data.messages;
 		channel.messages = messages.concat(channel.messages);
 
@@ -308,11 +332,11 @@ Irssw.command = function (text) {
 		command = 'msg ' + name + ' ' + text;
 	}
 
-	alert(command);
 	return $.ajax({
 		url : '/api/command',
 		type: 'post',
 		dataType: 'json',
+		timeout: 30 * 1000,
 		data : {
 			refnum : channel.refnum,
 			command : command,
@@ -386,6 +410,7 @@ $(function () {
 				li.click(function () {
 					updateChannelLog(channel.name);
 					if (isTouch) {
+						Irssw.channels = {};
 						input.show();
 						streamBody.show();
 						channelList.hide();
@@ -398,6 +423,7 @@ $(function () {
 			updateChannelList.loading = false;
 		}).
 		error(function (e) {
+			updateChannelList.loading = false;
 			alert('updateChannelList: ' +e);
 		});
 	}
@@ -405,12 +431,16 @@ $(function () {
 	$('#input form').submit(function () {
 		try {
 		var text = $('#input-text').val();
-		Irssw.command(text).
-		next(function () {
+		if (text) {
+			Irssw.command(text).
+			next(function () {
+				updateChannelLog(Irssw.currentChannel);
+				updateChannelList();
+			});
+			$('#input-text').val('');
+		} else {
 			updateChannelLog(Irssw.currentChannel);
-			updateChannelList();
-		});
-		$('#input-text').val('');
+		}
 		} catch (e) { alert(e) }
 		return false;
 	});

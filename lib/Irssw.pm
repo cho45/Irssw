@@ -113,16 +113,17 @@ route '/api/channel', method => GET, action => sub {
 
 	my $after   = $r->req->param('after')  || 0;
 	my $before  = $r->req->param('before') || $channel->{messages}->[-1]->{time} + 1;
-	my $limit   = 50;
+	my $limit   = $r->req->param('limit') || 5;
+
+	unless ($r->req->param('before')) {
+		irssi->call(mark_as_read => $target);
+	}
 
 	my $messages = [
 		splice @{[
 			reverse
 			map {
 				my $text = decode_utf8 $_->{text};
-#				$text =~ s{\x04([/eg0-9?>]+)}{}g;
-#				$text =~ s{\x03(\d+)}{}g;
-#				$text =~ s{\x0f}{}g;
 				$_->{text} = $text;
 				$_;
 			}
