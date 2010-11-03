@@ -152,3 +152,10 @@ body {
 	text-align: center;
 	-webkit-appearance: none;
 }
+
+
+#nextpage {
+	padding: 0.5em;
+	cursor: pointer;
+	font-weight: bold;
+}

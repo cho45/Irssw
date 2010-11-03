@@ -12,6 +12,7 @@
 		<script type="text/javascript" src="/js/app.js"></script>
 		<script type="text/javascript">
 			User = {
+				isTouch : true,
 				rks : '<?= $r->user->rks ?>'
 			};
 		</script>
@@ -36,7 +37,8 @@
 				</ul>
 			</div>
 
-			<div id="loading" class="loading">loading...</div>
+			<div id="loading" class="loading">Loading...</div>
+			<div id="nextpage">More...</div>
 		</div>
 	</body>
 </html>

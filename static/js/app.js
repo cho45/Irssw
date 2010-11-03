@@ -1,4 +1,5 @@
 document.createElement('time'); // bad hack
+Deferred.define();
 
 /* constant */
 MSGLEVEL_CRAP         = 0x0000001;
@@ -231,6 +232,86 @@ DateRelative.setupAutoUpdate = function (parent) {
 Irssw = {};
 Irssw.channels = {};
 Irssw.currentChannel = null;
+Irssw.Channel = function () { this.init.apply(this, arguments) };
+Irssw.Channel.prototype = {
+	init : function (name) {
+		var self = this;
+		self.name     = name;
+		self.pointer  = Infinity;
+		self.maximum  = 50;
+		self.messages = [];
+	},
+
+	/** retrive new log
+	 */
+	update : function () {
+		var self = this;
+
+		var after = self.messages[0] ? self.messages[0].time : 0;
+		return $.ajax({
+			url : '/api/channel',
+			dataType : 'json',
+			timeout: 30 * 1000,
+			data : {
+				c      : self.name,
+				after  : after,
+			    limit  : 20,
+				t      : new Date().getTime()
+			}
+		}).
+		next(function (data) {
+			self.messages = data.messages.concat(self.messages);
+			// squeeze to suppress memory usage
+			while (self.messages.length > 50) self.messages.pop();
+			self.pointer = self.messages[self.messages.length - 1];
+			return data.messages;
+		});
+	},
+
+	/* get n logs from current pointer
+	 */
+	get : function (n, lock) {
+		var self = this;
+		var ret = [];
+		var messages = self.messages;
+		var before   = self.pointer ? self.pointer.time : Infinity;
+		for (var i = 0, len = messages.length; i < len && ret.length < n; i++) {
+			var message = messages[i];
+			if (message.time < before) {
+				ret.push(message);
+			}
+		}
+		self.pointer = ret[ret.length-1] || self.pointer;
+
+		if (ret.length < n && !lock) {
+			return $.ajax({
+				url : '/api/channel',
+				dataType : 'json',
+				timeout: 30 * 1000,
+				data : {
+					c      : self.name,
+					limit  : n - ret.length,
+					before : self.pointer ? self.pointer.time : 0,
+					t      : new Date().getTime()
+				}
+			}).
+			next(function (data) {
+				if (data.messages.length) {
+					self.messages = data.messages.concat(self.messages);
+					return self.get(n - ret.length, true).next(function (rest) {
+						return ret.concat(rest);
+					});
+				} else {
+					return ret;
+				}
+			});
+		} else {
+			return next(function () {
+				return ret;
+			});
+		}
+	}
+};
 Irssw.createLine = function (message) {
 	var date    = new Date(+message.time * 1000);
 	var line = $("<div class='message'></div>");
@@ -267,8 +348,7 @@ Irssw.updateChannelList = function (callback) {
 		var names = {};
 		for (var i = 0, len = channels.length; i < len; i++) {
 			var channel = channels[i];
-			if (!Irssw.channels[channel.name]) Irssw.channels[channel.name] = { messages : [] };
-			if (!Irssw.channels[channel.name].messages) Irssw.channels[channel.name].messages = [];
+			if (!Irssw.channels[channel.name]) Irssw.channels[channel.name] = new Irssw.Channel(channel.name);
 			for (var key in channel) if (channel.hasOwnProperty(key)) {
 				Irssw.channels[channel.name][key] = channel[key];
 			}
@@ -284,42 +364,6 @@ Irssw.updateChannelList = function (callback) {
 		}
 
 		return channels;
-	});
-};
-Irssw.updateChannelLog = function (name, before, callback) {
-	var channel     = Irssw.channels[name];
-	if (!channel) {
-		channel = Irssw.channels[name] = { messages : [] };
-	}
-	var after = channel.messages && channel.messages[0] ? channel.messages[0].time : 0;
-	return $.ajax({
-		url : '/api/channel',
-		dataType : 'json',
-	    timeout: 30 * 1000,
-	    data : {
-			c      : name,
-			after  : after,
-			before : before || 0,
-			t      : new Date().getTime()
-		}
-	}).
-	next(function (data) {
-		var messages = data.messages;
-		channel.messages = messages.concat(channel.messages);
-
-		if (Irssw.currentChannel == name) {
-			messages = messages.reverse();
-		} else {
-			messages = channel.messages.concat().reverse();
-		}
-
-		for (var i = 0, len = messages.length; i < len; i++) {
-			var message = messages[i];
-			callback(message);
-		}
-		if (channel.messages.length > 50) channel.messages.length = 50;
-
-		Irssw.currentChannel = name;
 	});
 };
 Irssw.command = function (text) {
@@ -349,15 +393,17 @@ Irssw.command = function (text) {
 $(function () {
 	DateRelative.setupAutoUpdate();
 
-	isTouch = (
-		navigator.userAgent.indexOf('Android') != -1 ||
-		navigator.userAgent.indexOf('iPhone') != -1
-	);
+//	isTouch = (
+//		navigator.userAgent.indexOf('Android') != -1 ||
+//		navigator.userAgent.indexOf('iPhone') != -1
+//	);
+	isTouch = User.isTouch;
 
 	var streamBody  = $('#log');
 	var channelList = $('#channels ul');
 	var input       = $('#input');
 	var loading     = $('#loading');
+	var nextpage    = $('#nextpage');
 
 	if (isTouch) {
 		streamBody.hide();
@@ -371,6 +417,7 @@ $(function () {
 		document.title =  name;
 		location.hash = name;
 		$('#input-title').text(name);
+		Irssw.currentChannel = name;
 		if (Irssw.currentChannel != name) {
 			streamBody.empty();
 		}
@@ -378,18 +425,45 @@ $(function () {
 		loading.prependTo(streamBody);
 		loading.show();
 
-		return Irssw.updateChannelLog(name, function (message) {
-			var line = Irssw.createLine(message);
-			streamBody.prepend(line);
+		var channel = Irssw.channels[name] || new Irssw.Channel(name);
+		Irssw.channels[name] = channel;
+
+		channel.update().
+		next(function (messages) {
+			messages = messages.concat().reverse();
+			for (var i = 0, len = messages.length; i < len; i++) {
+				var message = messages[i];
+				var line = Irssw.createLine(message);
+				line.prependTo(streamBody);
+			}
 		}).
 		next(function () {
 			loading.hide();
 			DateRelative.updateAll();
 			updateChannelLog.loading = false;
 			updateChannelList();
+
+			var nextpageClick = new Deferred();
+			nextpage.appendTo(streamBody).unbind('click').bind('click', function () {
+				nextpageClick.call();
+			});
+
+			return nextpageClick.loop(50, function (n) {
+				return channel.get(10).next(function (messages) {
+					for (var i = 0, len = messages.length; i < len; i++) {
+						var message = messages[i];
+						var line = Irssw.createLine(message);
+						line.appendTo(streamBody);
+					}
+					nextpage.appendTo(streamBody)
+
+					return nextpageClick;
+				});
+			});
 		}).
 		error(function (e) {
-			alert('updateChannelLog: ' +e);
+			alert(e);
+			updateChannelLog.loading = false;
 		});
 	}
 
