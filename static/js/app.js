@@ -263,8 +263,17 @@ Irssw.Channel.prototype = {
 			self.messages = data.messages.concat(self.messages);
 			// squeeze to suppress memory usage
 			while (self.messages.length > 50) self.messages.pop();
-			self.pointer = self.messages[self.messages.length - 1];
-			return data.messages;
+			if (self.unread) {
+				var messages = self.messages.slice(0, self.unread);
+				self.pointer = messages[messages.length - 1];
+				return messages;
+			} else {
+				var messages = data.messages;
+				if (!self.pointer) {
+					self.pointer = messages[messages.length - 1];
+				}	
+				return messages;
+			}
 		});
 	},
 
@@ -417,16 +426,17 @@ $(function () {
 		document.title =  name;
 		location.hash = name;
 		$('#input-title').text(name);
-		Irssw.currentChannel = name;
-		if (Irssw.currentChannel != name) {
-			streamBody.empty();
-		}
 
 		loading.prependTo(streamBody);
 		loading.show();
 
 		var channel = Irssw.channels[name] || new Irssw.Channel(name);
+		if (Irssw.currentChannel != name) {
+			Irssw.channels = {};
+			streamBody.empty();
+		}
 		Irssw.channels[name] = channel;
+		Irssw.currentChannel = name;
 
 		channel.update().
 		next(function (messages) {
@@ -484,7 +494,6 @@ $(function () {
 				li.click(function () {
 					updateChannelLog(channel.name);
 					if (isTouch) {
-						Irssw.channels = {};
 						input.show();
 						streamBody.show();
 						channelList.hide();
