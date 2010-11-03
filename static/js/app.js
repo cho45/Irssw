@@ -459,13 +459,17 @@ $(function () {
 			});
 
 			return nextpageClick.loop(50, function (n) {
+				nextpage.hide();
+				loading.appendTo(streamBody);
+				loading.show();
 				return channel.get(10).next(function (messages) {
 					for (var i = 0, len = messages.length; i < len; i++) {
 						var message = messages[i];
 						var line = Irssw.createLine(message);
 						line.appendTo(streamBody);
 					}
-					nextpage.appendTo(streamBody)
+					loading.hide();
+					nextpage.appendTo(streamBody).show();
 
 					return nextpageClick;
 				});
@@ -537,6 +541,7 @@ $(function () {
 				channelList.hide();
 			}
 		} else {
+			document.title = "";
 			updateChannelList();
 			if (isTouch) {
 				input.hide();
