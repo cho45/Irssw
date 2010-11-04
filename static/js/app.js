@@ -417,6 +417,7 @@ $(function () {
 	if (isTouch) {
 		streamBody.hide();
 		input.hide();
+		nextpage.hide();
 	}
 
 	function updateChannelLog (name) {
@@ -427,9 +428,6 @@ $(function () {
 		location.hash = name;
 		$('#input-title').text(name);
 
-		loading.prependTo(streamBody);
-		loading.show();
-
 		var channel = Irssw.channels[name] || new Irssw.Channel(name);
 		if (Irssw.currentChannel != name) {
 			Irssw.channels = {};
@@ -437,6 +435,9 @@ $(function () {
 		}
 		Irssw.channels[name] = channel;
 		Irssw.currentChannel = name;
+
+		loading.prependTo(streamBody);
+		loading.show();
 
 		channel.update().
 		next(function (messages) {
@@ -446,6 +447,7 @@ $(function () {
 				var line = Irssw.createLine(message);
 				line.prependTo(streamBody);
 			}
+
 		}).
 		next(function () {
 			loading.hide();
@@ -456,11 +458,11 @@ $(function () {
 			var nextpageClick = new Deferred();
 			nextpage.appendTo(streamBody).unbind('click').bind('click', function () {
 				nextpageClick.call();
-			});
+			}).show();
 
 			return nextpageClick.loop(50, function (n) {
-				nextpage.hide();
 				loading.appendTo(streamBody);
+				nextpage.hide();
 				loading.show();
 				return channel.get(10).next(function (messages) {
 					for (var i = 0, len = messages.length; i < len; i++) {

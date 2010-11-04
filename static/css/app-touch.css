@@ -11,10 +11,6 @@ body {
 	-webkit-user-select: none;
 }
 
-#loading {
-	text-align: center;
-}
-
 #channels {
 	width: 100%em;
 	top: 0;
@@ -159,4 +155,5 @@ body {
 	padding: 0.5em;
 	cursor: pointer;
 	font-weight: bold;
+	text-align: center;
 }
