@@ -289,6 +289,7 @@ sub device {
 	$b->is_android and return 'touch';
 	$b->is_iphone  and return 'touch';
 	$b->is_dsi     and return 'touch';
+	$b->is_ipad    and return 'touch';
 	$b->is_mobile  and return 'mobile';
 	return '';
 }
