@@ -34,33 +34,41 @@ body {
 	white-space: nowrap;
 	font-weight: bold;
 	text-shadow: 0 0 3px #000;  
-	padding: 0.7em 1em;
 	border-style: solid;
 	border-width: 0 0 1px 0;
 	border-color: #111;
 }
 
+#channels ul li .channel-name {
+	display: block;
+	padding: 0.7em 1em;
+	-webkit-tap-highlight-color: rgba(0, 0, 0, 0.2);
+}
+
 #channels ul li .unread {
 	position: absolute;
-	bottom: 1em;
 	right: 1em;
+	bottom: 1em;
 	font-size: 80%;
 	z-index: 3;
-	background: #222;
-	-moz-border-radius: 1em;
-	-webkit-border-radius: 1em;
 	width: 3em;
-	padding: 0.2em 0 0.2em 0;
 	overflow: hidden;
+	padding: 0.3em 0 0.2em 0;
+	background: #222;
 	text-align: center;
+	-webkit-border-radius: 1em;
+	-moz-border-radius: 1em;
+	-webkit-box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.2);
 }
 
 #log {
 	overflow: hidden;
-	padding: 0.5em 0.5em 0.5em 1em;
+	padding: 4em 0.5em 0.5em 1em;
 	background: #f6f6f6;
 	color: #000;
 	z-index: 3;
+	-moz-border-radius: 0.5em;
+	-webkit-border-radius: 0.5em;
 }
 
 #log span.fg47 {
@@ -110,16 +118,14 @@ body {
 }
 
 #input {
-	background: #f6f6f6;
+	position: absolute;
+	top: 0.5em;
 	color: #000;
+	width: 100%;
 }
 
 #input #input-title {
 	display: none;
-}
-
-#input {
-	position: relative;
 }
 
 #input span.text {
@@ -130,7 +136,7 @@ body {
 
 #input span.text input {
 	width: 100%;
-	font-size: 14px;
+	font-size: 18px;
 }
 
 #input input[type="submit"] {
@@ -149,9 +155,26 @@ body {
 	-webkit-appearance: none;
 }
 
+#input select.post {
+	position: absolute;
+	top: 0;
+	right: 5px;
+	width: 25px;
+	height: 27px;
+	margin: 7px 0;;
+	padding: 0 5px;
+	outline: none;
+	border: 1px solid #000;
+	background: #999;
+	color: #fff;
+	text-align: center;
+	-webkit-appearance: none;
+}
+
 
 #loading ,
 #nextpage {
+	display: none;
 	padding: 0.5em;
 	cursor: pointer;
 	font-weight: bold;

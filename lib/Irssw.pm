@@ -7,6 +7,7 @@ use utf8;
 use Path::Class;
 use URI;
 use Encode;
+use UNIVERSAL::require;
 
 use Irssw::Router;
 use Irssw::Request;
@@ -19,6 +20,8 @@ use AnyEvent::Impl::Perl;
 use AnyEvent::MPRPC;
 use Data::Dumper;
 $Data::Dumper::Useqq = 1;
+
+our $VERSION = time();
 
 sub irssi () {
 	my $client = mprpc_client '127.0.0.1', '4423';
@@ -40,6 +43,13 @@ route '/touch/', action => sub {
 	$r->html('touch/index.html');
 };
 
+route '/redirect', action => sub {
+	my ($r) = @_;
+	$r->require_user or return;
+	$r->html('redirect.html');
+};
+
+
 #route '/:id', id => qr/\d+/, action => sub {
 #	my ($r) = @_;
 #};
@@ -53,11 +63,17 @@ route '/login', method => POST, action => sub {
 	my ($r) = @_;
 	my $password = $r->req->param('password') || '';
 	if ($password eq $r->config->{password}) {
-		$r->session->{authorized}++;
+		$r->session->set(authorized => 1);
 		$r->res->redirect('/');
 	} else {
 		$r->res->redirect('/login?failed=1');
 	}
+};
+
+route '/logout', action => sub {
+	my ($r) = @_;
+	$r->session->expire;
+	$r->res->redirect('/login');
 };
 
 route '/api/command', method => POST, action => sub {
@@ -143,6 +159,17 @@ route '/api/channel', method => GET, action => sub {
 	});
 };
 
+route '/api/error', method => POST, action => sub {
+	my ($r) = @_;
+	$r->require_user or return;
+	my $e = $r->req->param('e');
+	my $t = $r->req->param('t');
+	warn sprintf('%d: %s', $t, $e);
+	$r->json({
+		status => 'ok'
+	});
+};
+
 sub uri_for {
 	my ($r, $path, $args) = @_;
 	$path ||= "";
@@ -218,12 +245,15 @@ sub error {
 
 sub session {
 	my ($self) = @_;
-	$self->req->session;
+	$self->{_session} ||= do {
+		Plack::Session->require;
+		Plack::Session->new($self->req->env);
+	};
 }
 
 sub user {
 	my ($self) = @_;
-	if ($self->session->{authorized}) {
+	if ($self->session->get('authorized')) {
 		$self->{_user} ||= Irssw::User->new(
 			session_id => $self->req->session_options->{id}
 		);
@@ -261,6 +291,15 @@ sub device {
 	$b->is_dsi     and return 'touch';
 	$b->is_mobile  and return 'mobile';
 	return '';
+}
+
+sub version {
+	$VERSION
+}
+
+sub use_static_shared {
+	my ($self) = @_;
+	$self->config->{use_static_shared}
 }
 
 1;

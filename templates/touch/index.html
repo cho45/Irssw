@@ -4,18 +4,37 @@
 		<title>Irssw</title>
 		<meta charset="utf-8"/>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-		<link rel="stylesheet" type="text/css" href="/css/app-touch.css" media="screen,tv"/>
-		<link rel="shortcut icon" href="/favicon.ico" type="image/x-icon"/>
-		<script type="text/javascript" src="/js/jquery-1.4.2.min.js"></script>
-		<script type="text/javascript" src="/js/jsdeferred.jquery.js"></script>
-		<script type="text/javascript" src="/js/jquery.ba-hashchange.min.js"></script>
-		<script type="text/javascript" src="/js/app.js"></script>
 		<script type="text/javascript">
 			User = {
 				isTouch : true,
 				rks : '<?= $r->user->rks ?>'
 			};
 		</script>
+		<? my $styles = [] ?>
+		<? push @$styles, "/css/app-touch.css" ?>
+		<? if ($r->use_static_shared) { ?>
+		<link rel="stylesheet" type="text/css" href="/.shared.css:<?= $r->version ?>:<?= join ',', @$styles ?>" media="screen,tv"/>
+		<? } else { ?>
+		<? for (@$styles) { ?>
+		<link rel="stylesheet" type="text/css" href="<?= $_ ?>" media="screen,tv"/>
+		<? } ?>
+		<? } ?>
+
+		<? my $scripts = [] ?>
+		<? push @$scripts, "/js/jquery-1.4.2.min.js" ?>
+		<? push @$scripts, "/js/jsdeferred.jquery.js" ?>
+		<? push @$scripts, "/js/jquery.ba-hashchange.min.js" ?>
+		<? push @$scripts, "/js/gears_init.js" ?>
+		<? push @$scripts, "/js/createElementFromString.js" ?>
+		<? push @$scripts, "/js/getCurrentLocation.js" ?>
+		<? push @$scripts, "/js/app.js" ?>
+		<? if ($r->use_static_shared) { ?>
+		<script type="text/javascript" src="/.shared.js:<?= $r->version ?>:<?= join ',', @$scripts ?>"></script>
+		<? } else { ?>
+		<? for (@$scripts) { ?>
+		<script type="text/javascript" src="<?= $_?>"></script>
+		<? } ?>
+		<? } ?>
 	</head>
 	<body>
 		<div id="whole">
@@ -25,7 +44,11 @@
 					<span class="text">
 						<input type="text" size="50" id="input-text"/>
 					</span>
-					<input type="submit" value="▼"/>
+					<select class="post">
+						<option selected="selected" value="">▼</option>
+						<option value="post">Post</option>
+						<option value="location">Location</option>
+					</select>
 				</form>
 			</div>
 

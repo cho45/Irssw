@@ -110,7 +110,8 @@ function link (text) {
 			var a = document.createElement('a');
 			if (/^ttp/.test(t)) t = 'h' + t;
 			if (/^http/.test(t)) {
-				a.href = 'http://www.google.com/url?sa=D&q=' + encodeURIComponent(t);
+				// a.href = 'http://www.google.com/url?sa=D&q=' + encodeURIComponent(t);
+				a.href = '/redirect?l=' + encodeURIComponent(t);
 			} else {
 				a.href = t;
 			}
@@ -178,7 +179,7 @@ DateRelative.prototype = {
 		diff = Math.floor(diff / 24);
 		if (diff < 365) {
 			this.number   = diff;
-			this.unit     = 'date';
+			this.unit     = 'day';
 			this.isFuture = future;
 			return this;
 		}
@@ -205,7 +206,7 @@ DateRelative.update = function (target) {
 			'second' : '秒',
 			'minute' : '分',
 			'hour' : '時',
-			'date' : '日',
+			'day' : '日',
 			'year' : '年'
 		}[dtrl.unit] + (dtrl.isFuture ? '後' : '前')
 	} else {
@@ -237,7 +238,7 @@ Irssw.Channel.prototype = {
 	init : function (name) {
 		var self = this;
 		self.name     = name;
-		self.pointer  = Infinity;
+		self.pointer  = null;
 		self.maximum  = 50;
 		self.messages = [];
 	},
@@ -321,6 +322,17 @@ Irssw.Channel.prototype = {
 		}
 	}
 };
+Irssw.error = function (e) {
+	return $.ajax({
+		url : '/api/error',
+		dataType : 'json',
+		timeout: 30 * 1000,
+		data : {
+			e : e,
+			t : new Date().getTime()
+		}
+	});
+};
 Irssw.createLine = function (message) {
 	var date    = new Date(+message.time * 1000);
 	var line = $("<div class='message'></div>");
@@ -336,7 +348,7 @@ Irssw.createLine = function (message) {
 		String(100   + date.getUTCMinutes()).substring(1)      + ":" + 
 		String(100   + date.getUTCSeconds()).substring(1)      + "." + 
 		String(1000  + date.getUTCMilliseconds()).substring(1) + 'Z'
-	).text(date.toLocaleString()).appendTo(meta);
+	).appendTo(meta);
 	$('<span class="nick"></span>').text(message.nick).appendTo(line);
 	$('<div class="body"></div>').append(format(message.text)).appendTo(line);
 	DateRelative.update(time[0]);
@@ -460,25 +472,32 @@ $(function () {
 				nextpageClick.call();
 			}).show();
 
+			var loadingNextPage;
 			return nextpageClick.loop(50, function (n) {
+				if (loadingNextPage) return nextpageClick;
+				loadingNextPage = true;
+
 				loading.appendTo(streamBody);
 				nextpage.hide();
 				loading.show();
+
 				return channel.get(10).next(function (messages) {
+					loadingNextPage = false;
 					for (var i = 0, len = messages.length; i < len; i++) {
 						var message = messages[i];
 						var line = Irssw.createLine(message);
 						line.appendTo(streamBody);
 					}
 					loading.hide();
-					nextpage.appendTo(streamBody).show();
+					if (messages.length)
+						nextpage.appendTo(streamBody).show();
 
 					return nextpageClick;
 				});
 			});
 		}).
 		error(function (e) {
-			alert(e);
+			Irssw.error(e);
 			updateChannelLog.loading = false;
 		});
 	}
@@ -493,11 +512,7 @@ $(function () {
 			for (var i = 0, len = channels.length; i < len; i++) (function (channel) {
 				var channel = channels[i];	
 				var li = $('<li></li>');
-				$('<span class="channel-name"></span>').text(channel.name).appendTo(li);
-				if (channel.unread) {
-					$('<span class="unread"></span>').text(channel.unread).appendTo(li);
-				}
-				li.click(function () {
+				$('<span class="channel-name"></span>').text(channel.name).appendTo(li).click(function () {
 					updateChannelLog(channel.name);
 					if (isTouch) {
 						input.show();
@@ -505,6 +520,9 @@ $(function () {
 						channelList.hide();
 					}
 				});
+				if (channel.unread) {
+					$('<span class="unread"></span>').text(channel.unread).appendTo(li);
+				}
 				channelList.append(li);
 			})(channels[i]);
 		}).
@@ -513,7 +531,7 @@ $(function () {
 		}).
 		error(function (e) {
 			updateChannelList.loading = false;
-			alert('updateChannelList: ' +e);
+			Irssw.error('updateChannelList: ' + e);
 		});
 	}
 
@@ -543,13 +561,47 @@ $(function () {
 				channelList.hide();
 			}
 		} else {
-			document.title = "";
+			document.title = "Irssw";
 			updateChannelList();
 			if (isTouch) {
 				input.hide();
 				streamBody.hide();
 				channelList.show();
 			}
+		}
+	});
+
+	$('#input select.post').change(function () {
+		var handler = {
+			post : function () {
+				$('#input form').submit()
+			},
+			location : function  () {
+				getCurrentLocation(function (pos) {
+					var lat = pos.coords.latitude;
+					var lon = pos.coords.longitude;
+					var q   = lat + ',+' + lon + (
+						''
+					);
+					var uri = 'http://maps.google.co.jp/maps?q=' + q + '&iwloc=A&hl=ja';
+					$('#input-text').val($('#input-text').val() + ' ' + uri);
+					$('#input form').submit();
+				});
+			}
+		}[this.value];
+		if (handler) {
+			try {
+				handler();
+			} catch (e) { alert(e) }
+		}
+		this.selectedIndex = 0;
+	});
+
+	$(window).scroll(function () {
+		var height = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
+		var remain = height - window.innerHeight - window.scrollY;
+		if (remain < 100 + window.innerHeight) {
+			if (nextpage.is(':visible')) nextpage.click();
 		}
 	});
 

@@ -21,7 +21,12 @@ sub irssi () {
 }
 
 
-my $targets  = irssi->call('targets')->recv;
+#my $res = irssi->call('targets')->recv;
+#
+#use Data::Dumper;
+#warn Dumper $res;
+
+my $res = irssi->call('target' => '#wassr@wassr')->recv;
 
 use Data::Dumper;
-warn Dumper $targets ;
+warn Dumper $res;
