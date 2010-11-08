@@ -111,7 +111,7 @@ function link (text) {
 			a.target = '_blank';
 			if (/^ttp/.test(t)) t = 'h' + t;
 			if (/^http/.test(t)) {
-				if (/\.(png|gif|jpe?g)$/){
+				if (/\.(png|gif|jpe?g)$/.test(t)){
 					var img = document.createElement('img');
 					img.src = '/image?l=' + encodeURIComponent(t) + '&w=' + window.innerWidth + '&h=' + window.innerHeight;
 					a.href  = t;
