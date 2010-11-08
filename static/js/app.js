@@ -465,13 +465,13 @@ $(function () {
 
 		channel.update().
 		next(function (messages) {
-			messages = messages.concat().reverse();
+			var div = $('<div></div>');
 			for (var i = 0, len = messages.length; i < len; i++) {
 				var message = messages[i];
 				var line = Irssw.createLine(message);
-				line.prependTo(streamBody);
+				line.appendTo(div);
 			}
-
+			div.prependTo(streamBody);
 		}).
 		next(function () {
 			loading.hide();
