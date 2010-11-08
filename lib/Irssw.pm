@@ -16,6 +16,8 @@ use Irssw::Request;
 use Irssw::View;
 use Irssw::User;
 
+use Irssw::Image;
+
 use Irssw::Config;
 
 use AnyEvent::Impl::Perl;
@@ -54,29 +56,13 @@ route '/redirect', action => sub {
 route '/image', action => sub {
 	my ($r) = @_;
 	$r->require_user or return;
-	my $url = $r->req->param('l');
-
+	my $url    = $r->req->param('l');
 	my $width  = $r->req->param('w') || 800;
 	my $height = $r->req->param('h') || 600;
-	my $type;
 
-	local $_ = $url;
-	/\.jpe?g$/ and $type = 'jpeg';
-	/\.png$/   and $type = 'png';
-	/\.gif$/   and $type = 'gif';
-
-	return $r->res->code(400) unless $type;
-
-	my $dat = $ua->get($url)->content;
-	my $img = Imager->new;
-	$img->read(data => $dat);
-	$img = $img->scale(xpixels => $width, ypixels => $height, type => 'min');
-	$img = $img->filter(type => "unsharpmask", stddev => 0.7, scale => 0.5);
-	my $ret = "";
-	$img->write(data => \$ret, type => $type) or $r->res->code(400);
-	
-	$r->res->content_type("image/$type");
-	$r->res->content($ret);
+	my $img = Irssw::Image->get($url, width => $width, height => $height);
+	$r->res->content_type($img->{content_type});
+	$r->res->content($img->{content});
 };
 
 
