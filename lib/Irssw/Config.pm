@@ -4,7 +4,6 @@ use strict;
 use warnings;
 
 use Path::Class;
-use Config::Tiny;
 
 my $root   = dir('.')->absolute;
 my $file   = $root->file("app.conf");

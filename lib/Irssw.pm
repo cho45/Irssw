@@ -1,5 +1,5 @@
 package Irssw;
-
+use 5.8.8;
 use strict;
 use warnings;
 use utf8;
@@ -8,8 +8,6 @@ use Path::Class;
 use URI;
 use Encode;
 use UNIVERSAL::require;
-use Imager;
-use LWP::Simple qw($ua);
 
 use Irssw::Router;
 use Irssw::Request;
@@ -321,6 +319,52 @@ sub use_static_shared {
 
 1;
 __END__
+=encoding utf8
+
+=head1 NAME
+
+Irssw - IRC web gateway
+
+=head1 SETUP
+
+ * Install dependencies
+   cpanm --installdeps .
+ * ./irssw
+
+=head1 FEATURES
+
+ * 端末ごとの自動ふりわけ
+   * タッチデバイス (Android, iPhone, iPad) への対応
+   * PC 向けの簡易ビュー (どうしてもSSHを使えない環境とかで使う用)
+ * JS による画面制御
+   * 体感速度向上
+ * 省メモリ
+   * HT-03A 程度の端末でもホーム画面が殺されたりしない
+ * irssi と連動した未読管理
+   * window を移動した際、irssw 側の未読もクリアする
+
+=head1 INTERNAL
+
+ * irssi で直接 UI 用の HTTP サーバをたてない
+   * UI 用のウェブサーバは再起動を頻繁にすることが多いので、
+     irssi 用のプラグイン部分は最小限構成にしたい
+ * UI 用の HTTP サーバと irssi は RPC で通信する
+   * 現状は MessagePack RPC
+
+=head1 AUTHOR
+
+cho45 E<lt>cho45@lowreal.netE<gt>
+
+=head1 SEE ALSO
+
+L<App::Mobirc>
+
+=head1 LICENSE
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself.
+
+=cut
 
 
 

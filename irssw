@@ -1,0 +1,4 @@
+#!/bin/sh
+
+exec starman --preload-app --disable-keepalive script/app.psgi
+

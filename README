@@ -2,9 +2,9 @@
 Setup
 =====
 
- * Install Starman (cpanm Starman)
- * Install dependencies
- * starman script/app.psgi
+  cpanm https://github.com/cho45/Plack-Middleware-StaticShared/tarball/master
+  cpanm --installdeps .
+  ./irssw
 
 機能
 ====

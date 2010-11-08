@@ -1,3 +1,9 @@
+*.tmp
+Makefile
+META.yml
+blib
+pm_to_blib
+inc
+Makefile.old
+MANIFEST.bak
 app.conf
-entry.db
-test.db
