@@ -116,6 +116,21 @@ function link (text) {
 					img.src = '/image?l=' + encodeURIComponent(t) + '&w=' + window.innerWidth + '&h=' + window.innerHeight;
 					a.href  = t;
 					a.appendChild(img);
+				} else
+				if (/https?:\/\/maps.google.(?:co.jp|com)\/maps?.*q=([-+\d.]+),([-+\d.]+)/.test(t)) {
+					var lat = RegExp.$1, lon = RegExp.$2;
+					var staticmap = 'http://maps.google.com/maps/api/staticmap?';
+					staticmap += '&size=140x140';
+					staticmap += '&zoom=13';
+					staticmap += '&mobile=true';
+					staticmap += '&sensor=false';
+					staticmap += '&markers=' + lat + ',' + lon;
+					var img = document.createElement('img');
+					img.src = staticmap;
+					img.width = 140;
+					img.height = 140;
+					a.href  = t;
+					a.appendChild(img);
 				} else {
 					a.href = '/redirect?l=' + encodeURIComponent(t);
 					a.appendChild(document.createTextNode(texts[i]));
