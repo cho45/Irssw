@@ -108,15 +108,22 @@ function link (text) {
 		var t = texts[i];
 		if (re.test(t)) {
 			var a = document.createElement('a');
+			a.target = '_blank';
 			if (/^ttp/.test(t)) t = 'h' + t;
 			if (/^http/.test(t)) {
-				// a.href = 'http://www.google.com/url?sa=D&q=' + encodeURIComponent(t);
-				a.href = '/redirect?l=' + encodeURIComponent(t);
+				if (/\.(png|gif|jpe?g)$/){
+					var img = document.createElement('img');
+					img.src = t;
+					a.href  = t;
+					a.appendChild(img);
+				} else {
+					a.href = '/redirect?l=' + encodeURIComponent(t);
+					a.appendChild(document.createTextNode(texts[i]));
+				}
 			} else {
 				a.href = t;
+				a.appendChild(document.createTextNode(texts[i]));
 			}
-			a.target = '_blank';
-			a.appendChild(document.createTextNode(texts[i]));
 			ret.appendChild(a);
 		} else {
 			ret.appendChild(document.createTextNode(t));
@@ -596,6 +603,14 @@ $(function () {
 		}
 		this.selectedIndex = 0;
 	});
+
+//	$('#input-text').change(function () {
+//		if ($(this).val()) {
+//			$('#input select.post option[value="post"]').text('Post');
+//		} else {
+//			$('#input select.post option[value="post"]').text('Reload');
+//		}
+//	});
 
 	$(window).scroll(function () {
 		var height = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);

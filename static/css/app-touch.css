@@ -117,6 +117,10 @@ body {
 #log .message .meta time {
 }
 
+#log .message img {
+	max-width: 100%;
+}
+
 #input {
 	position: absolute;
 	top: 0.5em;
@@ -180,3 +184,4 @@ body {
 	font-weight: bold;
 	text-align: center;
 }
+
