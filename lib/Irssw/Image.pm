@@ -69,6 +69,7 @@ sub _get_file {
 	my ($class, $url) = @_;
 	my $key  = sha1_hex($url);
 	my $file = $class->_cache_file($key);
+	rand() < 0.01 and $class->gc;
 
 	if (-e $file) {
 		$file;
@@ -96,6 +97,7 @@ sub _cache_file {
 
 sub gc {
 	my ($class) = @_;
+	warn "$class\->gc started";
 	my $now = time();
 	$cache_root->recurse(depthfirst => 1, preorder => 0, callback => sub {
 		my $f = shift;
