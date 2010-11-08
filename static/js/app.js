@@ -355,7 +355,12 @@ Irssw.createLine = function (message) {
 		String(100   + date.getUTCMinutes()).substring(1)      + ":" + 
 		String(100   + date.getUTCSeconds()).substring(1)      + "." + 
 		String(1000  + date.getUTCMilliseconds()).substring(1) + 'Z'
-	).appendTo(meta);
+	);
+	if (message.uri) {
+		$('<a></a>').attr('href', message.uri).append(time).appendTo(meta);
+	} else {
+		time.appendTo(meta);
+	}
 	$('<span class="nick"></span>').text(message.nick).appendTo(line);
 	$('<div class="body"></div>').append(format(message.text)).appendTo(line);
 	DateRelative.update(time[0]);
