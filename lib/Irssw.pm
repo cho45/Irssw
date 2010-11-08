@@ -8,6 +8,8 @@ use Path::Class;
 use URI;
 use Encode;
 use UNIVERSAL::require;
+use Imager;
+use LWP::Simple qw($ua);
 
 use Irssw::Router;
 use Irssw::Request;
@@ -47,6 +49,34 @@ route '/redirect', action => sub {
 	my ($r) = @_;
 	$r->require_user or return;
 	$r->html('redirect.html');
+};
+
+route '/image', action => sub {
+	my ($r) = @_;
+	$r->require_user or return;
+	my $url = $r->req->param('l');
+
+	my $width  = $r->req->param('w') || 800;
+	my $height = $r->req->param('h') || 600;
+	my $type;
+
+	local $_ = $url;
+	/\.jpe?g$/ and $type = 'jpeg';
+	/\.png$/   and $type = 'png';
+	/\.gif$/   and $type = 'gif';
+
+	return $r->res->code(400) unless $type;
+
+	my $dat = $ua->get($url)->content;
+	my $img = Imager->new;
+	$img->read(data => $dat);
+	$img = $img->scale(xpixels => $width, ypixels => $height, type => 'min');
+	$img = $img->filter(type => "unsharpmask", stddev => 0.7, scale => 0.5);
+	my $ret = "";
+	$img->write(data => \$ret, type => $type) or $r->res->code(400);
+	
+	$r->res->content_type("image/$type");
+	$r->res->content($ret);
 };
 
 

@@ -113,7 +113,7 @@ function link (text) {
 			if (/^http/.test(t)) {
 				if (/\.(png|gif|jpe?g)$/){
 					var img = document.createElement('img');
-					img.src = t;
+					img.src = '/image?l=' + encodeURIComponent(t) + '&w=' + window.innerWidth + '&h=' + window.innerHeight;
 					a.href  = t;
 					a.appendChild(img);
 				} else {
