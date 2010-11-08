@@ -18,20 +18,31 @@ $ua->timeout(10);
 sub get {
 	my ($class, $url, %opts) = @_;
 	my ($type, $img);
+	local $_ = $url;
+	/\.jpe?g$/ and $type = 'jpeg';
+	/\.png$/   and $type = 'png';
+	/\.gif$/   and $type = 'gif';
 
 	my $file = $class->_get_file($url);
 	if ($file) {
 		$img = Image::Imlib2->load("$file");
+		
+		if ($img->width < $opts{width} &&
+			$img->height < $opts{height}) {
+
+			my $fh = $file->openr;
+			return +{
+				content_type => "image/$type",
+				content => $fh
+			};
+		}
+
 		my ($w, $h) = (0, 0);
 		if ($img->width > $img->height) {
 			$w = $opts{width};
 		} else {
 			$h = $opts{height};
 		}
-		local $_ = $url;
-		/\.jpe?g$/ and $type = 'jpeg';
-		/\.png$/   and $type = 'png';
-		/\.gif$/   and $type = 'gif';
 
 		$img = $img->create_scaled_image($w, $h);
 		$type = 'jpeg'; ## XXX: force
