@@ -1,30 +1,36 @@
+NAME
+    Irssw - IRC web gateway
 
-Setup
-=====
+SETUP
+      cpanm https://github.com/cho45/Plack-Middleware-StaticShared/tarball/master
+      cpanm --installdeps .
+      ./irssw
 
-  cpanm https://github.com/cho45/Plack-Middleware-StaticShared/tarball/master
-  cpanm --installdeps .
-  ./irssw
+FEATURES
+     * 端末ごとの自動ふりわけ
+       * タッチデバイス (Android, iPhone, iPad) への対応
+       * PC 向けの簡易ビュー (どうしてもSSHを使えない環境とかで使う用)
+     * JS による画面制御
+       * 体感速度向上
+     * 省メモリ
+       * HT-03A 程度の端末でもホーム画面が殺されたりしない
+     * irssi と連動した未読管理
+       * window を移動した際、irssw 側の未読もクリアする
 
-機能
-====
+INTERNAL
+     * irssi で直接 UI 用の HTTP サーバをたてない
+       * UI 用のウェブサーバは再起動を頻繁にすることが多いので、
+         irssi 用のプラグイン部分は最小限構成にしたい
+     * UI 用の HTTP サーバと irssi は RPC で通信する
+       * 現状は MessagePack RPC
 
- * 端末ごとの自動ふりわけ
-   * タッチデバイス (Android, iPhone, iPad) への対応
-   * PC 向けの簡易ビュー (どうしてもSSHを使えない環境とかで使う用)
- * JS による画面制御
-   * 体感速度向上
- * 省メモリ
-   * HT-03A 程度の端末でもホーム画面が殺されたりしない
- * irssi と連動した未読管理
-   * window を移動した際、irssw 側の未読もクリアする
+AUTHOR
+    cho45 <cho45@lowreal.net>
 
-設計
-====
+SEE ALSO
+    App::Mobirc
 
- * irssi で直接 UI 用の HTTP サーバをたてない
-   * UI 用のウェブサーバは再起動を頻繁にすることが多いので、
-     irssi 用のプラグイン部分は最小限構成にしたい
- * UI 用の HTTP サーバと irssi は RPC で通信する
-   * 現状は MessagePack RPC
+LICENSE
+    This library is free software; you can redistribute it and/or modify it
+    under the same terms as Perl itself.
 

@@ -327,9 +327,9 @@ Irssw - IRC web gateway
 
 =head1 SETUP
 
- * Install dependencies
-   cpanm --installdeps .
- * ./irssw
+  cpanm https://github.com/cho45/Plack-Middleware-StaticShared/tarball/master
+  cpanm --installdeps .
+  ./irssw
 
 =head1 FEATURES
 

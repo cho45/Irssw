@@ -1,4 +1,22 @@
+BEGIN {
+	my @mip = qw(
+		Module::Install::AuthorTests
+		Module::Install::Repository
+		Module::Install::ReadmeFromPod
+		Module::Install::TestBase
+	);
+	for (@mip) {
+		eval "require $_";
+		if ($@) {
+			warn $@;
+			printf("# Install following (perl Makefile.PL | cpanm):\n%s", join("\n", @mip));
+			exit 1;
+		}
+	}
+};
+
 use inc::Module::Install;
+
 name 'Irssw';
 all_from 'lib/Irssw.pm';
 
@@ -29,5 +47,13 @@ requires 'Perl6::Say';
 
 build_requires 'Test::Most';
 auto_include_deps;
+
 author_tests('xt');
+
+auto_set_repository;
+
+use_test_base;
+
+readme_from 'lib/Irssw.pm';
+
 WriteAll;
