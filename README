@@ -1,4 +1,11 @@
 
+Setup
+=====
+
+ * Install Starman (cpanm Starman)
+ * Install dependencies
+ * starman script/app.psgi
+
 機能
 ====
 
