@@ -227,9 +227,9 @@ DateRelative.update = function (target) {
 		format = dtrl.number + {
 			'second' : '秒',
 			'minute' : '分',
-			'hour' : '時',
-			'day' : '日',
-			'year' : '年'
+			'hour'   : '時',
+			'day'    : '日',
+			'year'   : '年'
 		}[dtrl.unit] + (dtrl.isFuture ? '後' : '前')
 	} else {
 		format = dtrl.number + ' ' +
@@ -357,29 +357,42 @@ Irssw.error = function (e) {
 };
 Irssw.createLine = function (message) {
 	var date    = new Date(+message.time * 1000);
-	var line = $("<div class='message'></div>");
-	if (message.level & MSGLEVEL_PUBLIC) line.addClass('public');
-	if (message.level & MSGLEVEL_NOTICES) line.addClass('notice');
+	var types   = [];
+	if (message.level & MSGLEVEL_PUBLIC) types.push('public');
+	if (message.level & MSGLEVEL_NOTICES) types.push('notice');
 
-	var meta = $('<span class="meta"></span>').appendTo(line);
-	var time = $('<time></time>').attr('datetime',
+	var datetime = 
 		String(10000 + date.getUTCFullYear()).substring(1)     + "-" + 
 		String(101   + date.getUTCMonth()).substring(1)        + "-" + 
 		String(100   + date.getUTCDate()).substring(1)         + "T" + 
 		String(100   + date.getUTCHours()).substring(1)        + ":" + 
 		String(100   + date.getUTCMinutes()).substring(1)      + ":" + 
 		String(100   + date.getUTCSeconds()).substring(1)      + "." + 
-		String(1000  + date.getUTCMilliseconds()).substring(1) + 'Z'
-	);
+		String(1000  + date.getUTCMilliseconds()).substring(1) + 'Z';
+
+	var line = createElementFromString(
+		"<div class='message'>" +
+			"<span class='meta'><time datetime='#{datetime}' class='time'></time></span>" +
+			"<span class='nick'>#{nick}</span>" +
+			"<div class='body'></div>" +
+		"</div>", {
+		data: {
+			datetime: datetime,
+			nick: message.nick
+		}
+	});
+
 	if (message.uri) {
-		$('<a></a>').attr('href', message.uri).append(time).appendTo(meta);
-	} else {
-		time.appendTo(meta);
+		$(line.time).wrap($('<a></a>').attr('href', message.uri));
 	}
-	$('<span class="nick"></span>').text(message.nick).appendTo(line);
-	$('<div class="body"></div>').append(format(message.text)).appendTo(line);
-	DateRelative.update(time[0]);
-	return line;
+
+	line.body.appendChild(format(message.text));
+
+	line.className += ' ' + types.join(' ');
+
+	DateRelative.update(line.time);
+
+	return $(line);
 };
 Irssw.updateChannelList = function (callback) {
 	return $.ajax({
@@ -437,6 +450,32 @@ Irssw.command = function (text) {
 	});
 };
 
+(function ($) {
+	var last = location.hash;
+
+	$.fn.hashchange = function (fun) {
+		if (fun) {
+			arguments.callee.setup.apply(this);
+			return this.bind('hashchange', fun);
+		} else {
+			return this.trigger('hashchange');
+		}
+	};
+
+	$.fn.hashchange.setup = function () {
+		var self = this;
+		(function () {
+			if (location.hash != last) {
+				self.trigger('hashchange');
+			}
+			setTimeout(arguments.callee, 500);
+		})();
+	};
+
+	$(window).hashchange(function () {
+		last = location.hash;
+	});
+})(jQuery);
 
 $(function () {
 	DateRelative.setupAutoUpdate();
@@ -464,7 +503,7 @@ $(function () {
 		updateChannelLog.loading = true;
 
 		document.title =  name;
-		location.hash = name;
+		location.hash = encodeURI(name);
 		$('#input-title').text(name);
 
 		var channel = Irssw.channels[name] || new Irssw.Channel(name);
@@ -540,12 +579,8 @@ $(function () {
 				var channel = channels[i];	
 				var li = $('<li></li>');
 				$('<span class="channel-name"></span>').text(channel.name).appendTo(li).click(function () {
-					updateChannelLog(channel.name);
-					if (isTouch) {
-						input.show();
-						streamBody.show();
-						channelList.hide();
-					}
+					location.hash = encodeURI(channel.name);
+					$(window).hashchange();
 				});
 				if (channel.unread) {
 					$('<span class="unread"></span>').text(channel.unread).appendTo(li);
@@ -577,25 +612,6 @@ $(function () {
 		}
 		} catch (e) { alert(e) }
 		return false;
-	});
-
-	$(window).hashchange(function () {
-		if (location.hash) {
-			updateChannelLog(location.hash);
-			if (isTouch) {
-				input.show();
-				streamBody.show();
-				channelList.hide();
-			}
-		} else {
-			document.title = "Irssw";
-			updateChannelList();
-			if (isTouch) {
-				input.hide();
-				streamBody.hide();
-				channelList.show();
-			}
-		}
 	});
 
 	$('#input select.post').change(function () {
@@ -640,15 +656,27 @@ $(function () {
 		}
 	});
 
-	updateChannelList();
-	if (location.hash) {
-		if (isTouch) {
-			input.show();
-			streamBody.show();
-			channelList.hide();
+	$.fn.hashchange.delay = 1000;
+	$(window).hashchange(function () {
+		if (location.hash) {
+			updateChannelLog(decodeURI(location.hash));
+			if (isTouch) {
+				input.show();
+				streamBody.show();
+				channelList.hide();
+			}
+		} else {
+			document.title = "Irssw";
+			updateChannelList();
+			if (isTouch) {
+				input.hide();
+				streamBody.hide();
+				channelList.show();
+			}
 		}
-		updateChannelLog(location.hash);
-	}
+	}).hashchange();
+
+	updateChannelList();
 
 	setInterval(function () {
 		updateChannelList();

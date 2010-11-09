@@ -9,6 +9,8 @@ use File::Spec;
 use Image::Imlib2;
 use File::Temp qw(tempfile);
 
+Image::Imlib2->set_cache_size(1024 * 1024);
+
 our $cache_root = dir(File::Spec->tmpdir)->subdir('irssi.images');
 our $expires    = 60 * 60 * 24;
 

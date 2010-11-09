@@ -20,7 +20,11 @@ builder {
 	enable "Plack::Middleware::ContentLength";
 
 	enable "Plack::Middleware::Static",
-		path => qr{^//?(?:js|css|images)/}, root => dirname(__FILE__) . '/../static/';
+		path => qr{^//?(?:js/|css/|images/|favicon\.)}, root => dirname(__FILE__) . '/../static/';
+
+	enable "Plack::Middleware::AccessLog::Timed",
+		format => "%h %l %u %t \"%r\" %>s %b %D";
+
 
 	enable "StaticShared",
 		cache => Cache::MemoryCache->new,
