@@ -146,7 +146,7 @@ route '/api/channel', method => GET, action => sub {
 	my $limit   = $r->req->param('limit') || 50;
 
 	unless ($r->req->param('before')) {
-		irssi->call(mark_as_read => $target);
+		my $res = irssi->call(mark_as_read => $target)->recv;
 	}
 
 	my $messages = [
