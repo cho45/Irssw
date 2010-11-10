@@ -106,6 +106,49 @@ function format (text) {
 	return ret;
 }
 
+function setupRichLink (parent) {
+	var urlTargets = {};
+	var urls       = [];
+	$(parent).find('a.external').each(function () {
+		var $this = $(this);
+		var href  = this.href;
+		var uri   = this.getAttribute('data-uri');
+		var text  = $this.text();
+		var select = $('<select class="link"></select>');
+		$('<option value="url" selected="selected"></option>').text(text).appendTo(select);
+		$('<option value="open"></option>').text(text).appendTo(select);
+		// $('<option value="preview" disabled="disabled">Preview</option>').appendTo(select);
+		select.change(function () {
+			var val = this.value;
+			this.selectedIndex = 1;
+			switch (val) {
+				case 'open': window.open(href); break;
+			}
+		});
+		$(this).replaceWith(select);
+		if (!urlTargets[uri]) urlTargets[uri] = [];
+		urlTargets[uri].push(select);
+		urls.push(uri);
+	});
+
+	setTimeout(function () {
+		$.ajax({
+			url : '/api/title',
+			dataType: 'json',
+			data : { url : urls },
+			success : function (data) {
+				for (var uri in data) if (data.hasOwnProperty(uri)) {
+					var title = data[uri];
+					var targets = urlTargets[uri];
+					for (var i = 0, it; it = targets[i]; i++) {
+						it.find('option[value="url"]').text(title);
+					}
+				}
+			}
+		});
+	}, 1000);
+}
+
 function DateRelative () { this.init.apply(this, arguments) };
 DateRelative.prototype = {
 	init : function (value) {
@@ -463,6 +506,7 @@ $(function () {
 				line.appendTo(div);
 			}
 			div.prependTo(streamBody);
+			setupRichLink(streamBody);
 		}).
 		next(function () {
 			loading.hide();
@@ -491,6 +535,7 @@ $(function () {
 						var line = Irssw.createLine(message);
 						line.appendTo(streamBody);
 					}
+					setupRichLink(streamBody);
 					loading.hide();
 					if (messages.length)
 						nextpage.appendTo(streamBody).show();

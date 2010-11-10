@@ -189,3 +189,20 @@ body {
 	text-align: center;
 }
 
+select.link {
+	display: inline;
+	font: inherit;
+	width: 100%;
+	max-width: 10em;
+	margin: 0;
+	padding: 0;
+	border: none;
+	outline: none;
+	background: none;
+	color: #22f;
+	text-decoration: underline;
+	overflow: hidden;
+	-webkit-appearance: none;
+	-webkit-padding-start: 0;
+	-webkit-text-overflow: ellipsis;
+}

@@ -15,6 +15,7 @@ use Irssw::View;
 use Irssw::User;
 
 use Irssw::Image;
+use Irssw::Page;
 
 use Irssw::Config;
 
@@ -171,6 +172,14 @@ route '/api/channel', method => GET, action => sub {
 		channel => $target,
 		messages => $messages,
 	});
+};
+
+route '/api/title', method => GET, action => sub {
+	my ($r) = @_;
+	$r->require_user or return;
+	my $urls = [ $r->req->param('url[]') ];
+	my $titles = Irssw::Page->get_multi($urls);
+	$r->json($titles);
 };
 
 route '/api/error', method => POST, action => sub {
