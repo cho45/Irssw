@@ -27,6 +27,8 @@
 		<? push @$scripts, "/js/gears_init.js" ?>
 		<? push @$scripts, "/js/createElementFromString.js" ?>
 		<? push @$scripts, "/js/getCurrentLocation.js" ?>
+		<? push @$scripts, "/js/parseIRCMessage.js" ?>
+		<? push @$scripts, "/js/location.js" ?>
 		<? push @$scripts, "/js/app.js" ?>
 		<? if ($r->use_static_shared) { ?>
 		<script type="text/javascript" src="/.shared.js:<?= $r->version ?>:<?= join ',', @$scripts ?>"></script>

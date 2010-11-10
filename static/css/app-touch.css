@@ -42,7 +42,10 @@ body {
 #channels ul li .channel-name {
 	display: block;
 	padding: 0.7em 1em;
+	overflow: hidden;
 	-webkit-tap-highlight-color: rgba(0, 0, 0, 0.2);
+	text-overflow: ellipsis;
+	-webkit-text-overflow: ellipsis;
 }
 
 #channels ul li .unread {

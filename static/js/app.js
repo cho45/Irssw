@@ -32,74 +32,6 @@ MSGLEVEL_NO_ACT       = 0x2000000; /* Don't trigger channel activity */
 MSGLEVEL_NEVER        = 0x4000000; /* never ignore / never log */
 MSGLEVEL_LASTLOG      = 0x8000000; /* never ignore / never log */
 
-function parseText (text) {
-	var fg = 0;
-	var bg = 0;
-	var fl = 0;
-	var ss = text.split(parseText.re);
-	var ret = [];
-	var state = {};
-	for (var i = 0, len = ss.length; i < len; i++) {
-		var text = ss[i];
-		if (!text) continue;
-		var type = text.charCodeAt(0);
-		switch (type) {
-			case 0x02:
-				state.bold = !state.bold; break;
-			case 0x03:
-				if (text.charCodeAt(1)) state.fg = text.charCodeAt(1);
-				if (text.charCodeAt(2)) state.bg = text.charCodeAt(2);
-				break;
-			case 0x04:
-				switch (text.charCodeAt(1)) {
-					case 0x61: state.blink = !state.blink; break;
-					case 0x62: state.underline = !state.underline; break;
-					case 0x63: state.bold = !state.bold; break;
-					case 0x64: state.reverse = !state.reverse; break;
-					case 0x65: state.indent = !state.indent; break;
-					case 0x67: state = {}; break;
-					case 0x68: state.clrtoeol = !state.clrtoeol; break;
-					case 0x69: state.monospace = !state.monospace; break;
-					case 0x29: break;
-					default:
-						if (text.charCodeAt(2)) state.fg = text.charCodeAt(2);
-						if (text.charCodeAt(3)) state.bg = text.charCodeAt(3);
-				}
-				break;
-			case 0x06:
-				state.blink = !state.blink; break;
-			case 0x0f:
-				state = {}; break
-			case 0x16:
-				state.reverse = !state.reverse; break;
-			case 0x1b:
-				// TODO ansi
-				break;
-			case 0x1f:
-				state.underline = !state.underline; break;
-			default:
-				var attr = {};
-				for (var key in state) if (state.hasOwnProperty(key)) {
-					attr[key] = state[key];
-				}
-				ret.push({ attr : attr, text : text });
-		}
-	}
-
-	return ret;
-}
-parseText.types = [
-	'\u0002',
-	'\u0003[0-9][0-9]?',
-	'\u0004(?:[\u0060-\u0069\u0029]|..)',
-	'\u0006',
-	'\u000f', // remove all
-	'\u0016', // reverse
-	'\u001b', // ansi
-	'\u001f'  // underline
-];
-parseText.re = new RegExp('(' + parseText.types.join('|') + ')', 'g');
-
 function link (text) {
 	var re    = /(h?ttps?:\/\/\S+)/;
 	var texts = text.split(re);
@@ -107,14 +39,16 @@ function link (text) {
 	for (var i = 0, len = texts.length; i < len; i++) {
 		var t = texts[i];
 		if (re.test(t)) {
+			var link = t, text = t;
 			var a = document.createElement('a');
 			a.target = '_blank';
-			if (/^ttp/.test(t)) t = 'h' + t;
-			if (/^http/.test(t)) {
-				if (/\.(png|gif|jpe?g)$/.test(t)){
+			a.className = 'external';
+			if (/^ttp/.test(link)) link = 'h' + link;
+			if (/^http/.test(link)) {
+				if (/\.(png|gif|jpe?g)$/.test(link)){
 					var img = document.createElement('img');
 					img.src = '/image?l=' + encodeURIComponent(t) + '&w=' + window.innerWidth + '&h=' + window.innerHeight;
-					a.href  = t;
+					a.href  = link;
 					a.appendChild(img);
 				} else
 				if (/https?:\/\/maps.google.(?:co.jp|com)\/maps?.*q=([-+\d.]+),([-+\d.]+)/.test(t)) {
@@ -129,15 +63,18 @@ function link (text) {
 					img.src = staticmap;
 					img.width = 140;
 					img.height = 140;
-					a.href  = t;
+					a.href  = link;
 					a.appendChild(img);
 				} else {
-					a.href = '/redirect?l=' + encodeURIComponent(t);
-					a.appendChild(document.createTextNode(texts[i]));
+					var loc  = Location.parse(link);
+					var text = loc.host;
+					a.setAttribute('data-uri', link);
+					a.href = '/redirect?l=' + encodeURIComponent(link);
+					a.appendChild(document.createTextNode(text));
 				}
 			} else {
-				a.href = t;
-				a.appendChild(document.createTextNode(texts[i]));
+				a.href = link;
+				a.appendChild(document.createTextNode(text));
 			}
 			ret.appendChild(a);
 		} else {
@@ -148,7 +85,7 @@ function link (text) {
 }
 
 function format (text) {
-	var parsed = parseText(text);
+	var parsed = parseIRCMessage(text);
 	var ret    = document.createDocumentFragment();
 	for (var i = 0, len = parsed.length; i < len; i++) {
 		var t = parsed[i];
