@@ -17,6 +17,8 @@ use Irssw;
 my $handler = \&Irssw::run;
 
 builder {
+	enable "Plack::Middleware::ReverseProxy";
+
 	enable "Plack::Middleware::ContentLength";
 
 	enable "Plack::Middleware::Static",
@@ -45,7 +47,6 @@ builder {
 
 
 
-	enable "Plack::Middleware::ReverseProxy";
 	enable "Session", store => 'File';
 
 	$handler;
