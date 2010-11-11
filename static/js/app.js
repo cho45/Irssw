@@ -341,7 +341,7 @@ Irssw.updateChannelList = function (callback) {
 		}
 	}).
 	next(function (data) {
-		var channels = data.channels;
+		var channels = data.channels.slice(0, 20);
 
 		var names = {};
 		for (var i = 0, len = channels.length; i < len; i++) {
@@ -602,9 +602,11 @@ $(function () {
 				streamBody.show();
 				channelList.hide();
 			}
+			setTimeout(function () {
+				updateChannelList();
+			}, 500);
 		} else {
 			document.title = "Irssw";
-			updateChannelList();
 			if (isTouch) {
 				input.hide();
 				streamBody.hide();
