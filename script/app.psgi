@@ -4,12 +4,14 @@ use warnings;
 use utf8;
 use lib glob 'modules/*/lib';
 use lib glob 'extlib/*/lib';
+use lib "$ENV{HOME}/project/Plack-Middleware-StaticShared/lib";
 
 use UNIVERSAL::require;
 use Plack::Builder;
 use Path::Class;
 use File::Basename qw(dirname);
-use Cache::MemoryCache;
+use Cache::File;
+use File::Spec;
 use WebService::Google::Closure;
 
 use Irssw;
@@ -29,7 +31,7 @@ builder {
 
 
 	enable "StaticShared",
-		cache => Cache::MemoryCache->new,
+		cache => Cache::File->new(cache_root => File::Spec->tmpdir . '/irssw.static-shared', default_expires => '7 days'),
 		base  => './static/',
 		binds => [
 			{
