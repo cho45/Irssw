@@ -538,12 +538,12 @@ $(function () {
 		try {
 		var text = $('#input-text').val();
 		if (text) {
+			$('#input-text').val('');
 			Irssw.command(text).
 			next(function () {
 				updateChannelLog(Irssw.currentChannel);
 				updateChannelList();
 			});
-			$('#input-text').val('');
 		} else {
 			updateChannelLog(Irssw.currentChannel);
 		}
