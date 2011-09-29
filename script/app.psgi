@@ -16,6 +16,7 @@ use WebService::Google::Closure;
 
 use Irssw;
 
+my $root    = file(__FILE__)->parent->parent->absolute;
 my $handler = \&Irssw::run;
 
 builder {
@@ -24,7 +25,7 @@ builder {
 	enable "Plack::Middleware::ContentLength";
 
 	enable "Plack::Middleware::Static",
-		path => qr{^//?(?:js/|css/|images/|favicon\.)}, root => dirname(__FILE__) . '/../static/';
+		path => qr{^//?(?:js/|css/|images/|favicon\.)}, root => $root->subdir('static'),
 
 	enable "Plack::Middleware::AccessLog::Timed",
 		format => "%h %l %u %t \"%r\" %>s %b %D";
@@ -32,7 +33,7 @@ builder {
 
 	enable "StaticShared",
 		cache => Cache::File->new(cache_root => File::Spec->tmpdir . '/irssw.static-shared', default_expires => '7 days'),
-		base  => './static/',
+		base  => $root->subdir('static'),
 		binds => [
 			{
 				prefix       => '/.shared.js',
